@@ -23,6 +23,18 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// DEVELOPPEMENT : Désactive "Confirm email" dans Supabase Dashboard
+// URL : https://supabase.com/dashboard/project/[TON_PROJECT_ID]/auth/providers
+// Toggle "Confirm email" → OFF
+// Cela permet de réutiliser le même email à chaque test sans confirmation.
+// Pour supprimer un utilisateur bloqué :
+// URL : https://supabase.com/dashboard/project/[TON_PROJECT_ID]/auth/users
+// Clique sur les 3 points → Delete user
+//
+// Aucune redirect URL n'est nécessaire ici : l'app est 100 % native
+// (detectSessionInUrl: false). Le code OTP saisi dans l'app suffit.
+// ─────────────────────────────────────────────────────────────────────────────
 export const supabase = createClient<Database>(
   supabaseUrl ?? 'http://localhost',
   supabaseAnonKey ?? 'public-anon-key',

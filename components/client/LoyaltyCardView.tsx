@@ -1,88 +1,146 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
-import type { LoyaltyCardWithDetails } from '@/types';
 
-interface Props {
-  card: LoyaltyCardWithDetails;
+export interface LoyaltyCardViewProps {
+  merchantName: string;
+  businessType?: string;
+  currentPoints: number;
+  nextRewardPoints: number;
+  nextRewardLabel: string;
+  color?: string; // couleur personnalisable par commerce (pour plus tard)
 }
 
-/** Carte de fidélité visuelle (accueil client). */
-export function LoyaltyCardView({ card }: Props) {
-  const { next_reward, points_to_next } = card;
+const MAX_STAMPS = 20; // 2 lignes de 10 max
+const PER_ROW = 10;
 
-  const progress =
-    next_reward && next_reward.points_required > 0
-      ? Math.min(1, card.points / next_reward.points_required)
-      : 1;
+/**
+ * Carte à tampons numérique.
+ * Grille de pastilles calculée dynamiquement :
+ *   filled = currentPoints % nextRewardPoints (points du cycle en cours)
+ *   total  = nextRewardPoints
+ *   total > 20 → on affiche seulement le chiffre, pas de grille.
+ */
+export function LoyaltyCardView({
+  merchantName,
+  businessType,
+  currentPoints,
+  nextRewardPoints,
+  nextRewardLabel,
+  color = theme.colors.primary,
+}: LoyaltyCardViewProps) {
+  const hasReward = nextRewardPoints > 0 && nextRewardLabel.length > 0;
+  const total = hasReward ? nextRewardPoints : 0;
+  const filled = hasReward ? currentPoints % nextRewardPoints : 0;
+  const remaining = hasReward ? total - filled : 0;
+  const useGrid = hasReward && total <= MAX_STAMPS;
 
   return (
-    <View style={styles.card}>
-      <View style={styles.topRow}>
+    <View style={[styles.card, { backgroundColor: color }]}>
+      {/* En-tête */}
+      <View style={styles.header}>
         <Text style={styles.business} numberOfLines={1}>
-          {card.business_name}
+          {merchantName}
         </Text>
-        <View style={styles.pointsPill}>
-          <Text style={styles.pointsValue}>{card.points}</Text>
-          <Text style={styles.pointsLabel}>pts</Text>
+        {businessType ? (
+          <Text style={styles.type} numberOfLines={1}>
+            {businessType}
+          </Text>
+        ) : null}
+      </View>
+
+      {/* Centre : grille de pastilles OU progression chiffrée */}
+      {!hasReward ? (
+        <View style={styles.center}>
+          <Text style={styles.bigNumber}>{currentPoints}</Text>
+          <Text style={styles.bigLabel}>points cumulés</Text>
         </View>
-      </View>
+      ) : useGrid ? (
+        <StampGrid filled={filled} total={total} />
+      ) : (
+        <View style={styles.center}>
+          <Text style={styles.bigNumber}>
+            {filled} / {total}
+          </Text>
+          <Text style={styles.bigLabel}>points</Text>
+        </View>
+      )}
 
-      <View style={styles.progressTrack}>
-        <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
-      </View>
-
-      <Text style={styles.hint}>
-        {next_reward
-          ? `Encore ${points_to_next} point${points_to_next > 1 ? 's' : ''} pour « ${next_reward.label} »`
-          : 'Toutes les récompenses sont débloquées 🎉'}
+      {/* Pied : prochaine récompense */}
+      <Text style={styles.footer} numberOfLines={2}>
+        {!hasReward
+          ? 'Continue à cumuler des points 🎉'
+          : remaining > 0
+            ? `Encore ${remaining} pour : ${nextRewardLabel}`
+            : `Récompense prête : ${nextRewardLabel} 🎁`}
       </Text>
     </View>
   );
 }
 
+function StampGrid({ filled, total }: { filled: number; total: number }) {
+  const stamps = Array.from({ length: total }, (_, i) => i < filled);
+  const rows: boolean[][] = [];
+  for (let i = 0; i < stamps.length; i += PER_ROW) {
+    rows.push(stamps.slice(i, i + PER_ROW));
+  }
+
+  return (
+    <View style={styles.grid}>
+      {rows.map((row, rIdx) => (
+        <View key={rIdx} style={styles.row}>
+          {row.map((isFilled, cIdx) => (
+            <View key={cIdx} style={[styles.stamp, isFilled ? styles.stampFilled : styles.stampEmpty]}>
+              {isFilled ? <Text style={styles.stampStar}>★</Text> : null}
+            </View>
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+const STAMP = 26;
+
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.radius.lg,
+    borderRadius: 16,
     padding: theme.spacing.lg,
-    marginBottom: theme.spacing.md,
-  },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    minHeight: 200,
     justifyContent: 'space-between',
-    marginBottom: theme.spacing.md,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: theme.spacing.sm,
   },
   business: {
     flex: 1,
-    color: '#fff',
+    color: theme.colors.cardText,
     fontSize: theme.fontSize.xl,
     fontWeight: '800',
-    marginRight: theme.spacing.sm,
   },
-  pointsPill: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: theme.radius.full,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs,
-    gap: 4,
+  type: {
+    color: theme.colors.cardText,
+    opacity: 0.8,
+    fontSize: theme.fontSize.sm,
+    fontWeight: '600',
   },
-  pointsValue: { color: '#fff', fontSize: theme.fontSize.xl, fontWeight: '800' },
-  pointsLabel: { color: '#fff', fontSize: theme.fontSize.sm },
-  progressTrack: {
-    height: 8,
-    borderRadius: theme.radius.full,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    overflow: 'hidden',
-    marginBottom: theme.spacing.sm,
+  center: { alignItems: 'center', paddingVertical: theme.spacing.lg },
+  bigNumber: { color: theme.colors.cardText, fontSize: theme.fontSize.display, fontWeight: '800' },
+  bigLabel: { color: theme.colors.cardText, opacity: 0.85, fontSize: theme.fontSize.md },
+  grid: { paddingVertical: theme.spacing.md, gap: theme.spacing.sm, alignItems: 'center' },
+  row: { flexDirection: 'row', gap: theme.spacing.sm, justifyContent: 'center' },
+  stamp: {
+    width: STAMP,
+    height: STAMP,
+    borderRadius: STAMP / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  progressFill: {
-    height: '100%',
-    borderRadius: theme.radius.full,
-    backgroundColor: '#fff',
-  },
-  hint: { color: '#fff', fontSize: theme.fontSize.md, opacity: 0.95 },
+  stampFilled: { backgroundColor: '#FFF7E0' },
+  stampEmpty: { borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)', backgroundColor: 'transparent' },
+  stampStar: { color: theme.colors.warning, fontSize: 14, fontWeight: '900' },
+  footer: { color: theme.colors.cardText, fontSize: theme.fontSize.md, fontWeight: '600' },
 });

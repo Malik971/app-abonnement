@@ -64,6 +64,8 @@ export default function ClientLayout() {
         name="profile"
         options={{ title: 'Profil', tabBarIcon: ({ color }) => <TabIcon emoji="👤" color={color} /> }}
       />
+      {/* Écran de recherche : navigable mais masqué de la barre d'onglets. */}
+      <Tabs.Screen name="search" options={{ href: null }} />
     </Tabs>
   );
 }

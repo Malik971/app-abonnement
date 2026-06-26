@@ -9,7 +9,7 @@
     "newArchEnabled": true,
     "splash": {
       "resizeMode": "contain",
-      "backgroundColor": "#1A56FF"
+      "backgroundColor": "#E8420A"
     },
     "ios": {
       "supportsTablet": false,
@@ -22,7 +22,7 @@
     "android": {
       "package": "com.fidelite.guadeloupe",
       "adaptiveIcon": {
-        "backgroundColor": "#1A56FF"
+        "backgroundColor": "#E8420A"
       },
       "permissions": [
         "CAMERA",
@@ -40,9 +40,10 @@
       [
         "expo-notifications",
         {
-          "color": "#1A56FF"
+          "color": "#E8420A"
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true

@@ -60,7 +60,7 @@ export default function ClientsScreen() {
             ) : null
           }
           ListEmptyComponent={
-            <EmptyState emoji="👥" title="Aucun client" message="Tes clients apparaîtront ici après leur premier passage." />
+            <EmptyState icon="👥" title="Aucun client" subtitle="Tes clients apparaîtront ici après leur premier passage." />
           }
         />
       )}

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
-import { signUpMerchant, startPhoneSignIn, verifyPhoneSignIn } from '@/hooks/useAuth';
+import { signUpMerchant, startEmailMagicLink, verifyEmailOtp } from '@/hooks/useAuth';
 import type { UserRole } from '@/types';
 import { RoleToggle } from './login';
 
@@ -36,7 +36,7 @@ export default function RegisterScreen() {
 
 function ClientRegister() {
   const [firstName, setFirstName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -45,7 +45,7 @@ function ClientRegister() {
   async function sendCode() {
     setLoading(true);
     setError(null);
-    const { error } = await startPhoneSignIn(phone);
+    const { error } = await startEmailMagicLink(email);
     setLoading(false);
     if (error) setError(error);
     else setOtpSent(true);
@@ -54,7 +54,7 @@ function ClientRegister() {
   async function verify() {
     setLoading(true);
     setError(null);
-    const { error } = await verifyPhoneSignIn(phone, code, firstName);
+    const { error } = await verifyEmailOtp(email, code, firstName);
     setLoading(false);
     if (error) setError(error);
   }
@@ -69,17 +69,18 @@ function ClientRegister() {
         editable={!otpSent}
       />
       <Input
-        label="Téléphone"
-        placeholder="+590 690 00 00 00"
-        keyboardType="phone-pad"
-        autoComplete="tel"
-        value={phone}
-        onChangeText={setPhone}
+        label="Email"
+        placeholder="tonemail@exemple.com"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoComplete="email"
+        value={email}
+        onChangeText={setEmail}
         editable={!otpSent}
       />
       {otpSent ? (
         <Input
-          label="Code reçu par SMS"
+          label="Code reçu par email"
           placeholder="123456"
           keyboardType="number-pad"
           value={code}
@@ -94,7 +95,7 @@ function ClientRegister() {
           label="Recevoir le code"
           onPress={sendCode}
           loading={loading}
-          disabled={!firstName || !phone}
+          disabled={!firstName || !email}
         />
       )}
     </View>

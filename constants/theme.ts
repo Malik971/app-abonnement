@@ -6,17 +6,19 @@
 
 export const theme = {
   colors: {
-    primary: '#1A56FF', // Bleu principal, actions, CTA
-    primaryLight: '#E8EEFF', // Fond bleu léger, backgrounds secondaires
+    primary: '#E8420A', // Orange Guadeloupe, chaud et fort
+    primaryLight: '#FFF0EB', // Fond orange très léger
+    primaryDark: '#C23500', // Orange foncé pour les états pressed
     success: '#16A34A', // Validation, points gagnés
     warning: '#D97706', // Alertes clients inactifs
     danger: '#DC2626', // Mur atteint, erreurs critiques
     locked: '#9CA3AF', // Fonctionnalités verrouillées
-    background: '#F9FAFB', // Fond général
+    background: '#F7F7F7', // Fond général
     surface: '#FFFFFF', // Cards, modals
-    text: '#111827', // Texte principal
+    text: '#1A1A1A', // Texte principal
     textSecondary: '#6B7280', // Texte secondaire, labels
-    border: '#E5E7EB', // Bordures légères
+    border: '#E8E8E8', // Bordures légères
+    cardText: '#FFFFFF', // Texte sur les cartes colorées
   },
   spacing: {
     xs: 4,

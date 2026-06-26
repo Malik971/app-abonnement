@@ -8,11 +8,17 @@
  * Le rôle est stocké dans user_metadata ET dans la table `profiles`.
  * Il est figé après inscription (changement = opération manuelle).
  */
+import type { Session } from '@supabase/supabase-js';
 import { useEffect } from 'react';
 
+import { withTimeout } from '@/lib/async';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import type { UserRole } from '@/types';
+
+// Au-delà de ce délai au démarrage, on cesse d'attendre Supabase et on laisse
+// l'app continuer (écran consentement / connexion) plutôt que de figer le splash.
+const STARTUP_TIMEOUT_MS = 8000;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Chargement du rôle
@@ -44,20 +50,40 @@ export function useAuthListener(): void {
   useEffect(() => {
     let active = true;
 
+    async function resolveRole(session: Session | null): Promise<UserRole | null> {
+      if (!session?.user) return null;
+      return withTimeout(loadRoleForUser(session.user.id), STARTUP_TIMEOUT_MS, null);
+    }
+
     async function bootstrap() {
-      const { data } = await supabase.auth.getSession();
-      const session = data.session;
-      const role = session?.user ? await loadRoleForUser(session.user.id) : null;
-      if (active) {
-        setAuth({ session, role });
-        setInitializing(false);
+      try {
+        // getSession peut pendre (token à rafraîchir, URL Supabase injoignable…)
+        // → on borne l'attente pour ne jamais figer l'écran de chargement.
+        const session = await withTimeout(
+          supabase.auth.getSession().then((r) => r.data.session),
+          STARTUP_TIMEOUT_MS,
+          null,
+        );
+        const role = await resolveRole(session);
+        if (active) setAuth({ session, role });
+      } catch (e) {
+        if (__DEV__) console.warn('[auth] bootstrap échoué, on continue sans session :', e);
+      } finally {
+        // On débloque TOUJOURS le splash, quoi qu'il arrive.
+        if (active) setInitializing(false);
       }
     }
     void bootstrap();
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      const role = session?.user ? await loadRoleForUser(session.user.id) : null;
-      if (active) setAuth({ session, role });
+      try {
+        const role = await resolveRole(session);
+        if (active) setAuth({ session, role });
+      } catch (e) {
+        if (__DEV__) console.warn('[auth] onAuthStateChange échoué :', e);
+      } finally {
+        if (active) setInitializing(false);
+      }
     });
 
     return () => {
@@ -197,6 +223,31 @@ export async function startEmailMagicLink(email: string): Promise<{ error?: stri
     options: { data: { role: 'client' } },
   });
   return error ? { error: error.message } : {};
+}
+
+/** Vérifie le code OTP reçu par email. */
+export async function verifyEmailOtp(
+  email: string,
+  token: string,
+  firstName = '',
+): Promise<{ error?: string }> {
+  const { data, error } = await supabase.auth.verifyOtp({
+    email: email.trim(),
+    token: token.trim(),
+    type: 'email',
+  });
+  if (error) return { error: error.message };
+
+  const userId = data.user?.id;
+  if (userId) {
+    const name = firstName.trim();
+    if (name) {
+      await supabase.auth.updateUser({ data: { role: 'client', first_name: name } });
+    }
+    await ensureProfile(userId, 'client');
+    await ensureClientRow(userId, name, null);
+  }
+  return {};
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

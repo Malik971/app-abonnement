@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 
 import { theme } from '@/constants/theme';
 import { useAuthListener } from '@/hooks/useAuth';
+import { withTimeout } from '@/lib/async';
 import { loadConsent } from '@/lib/consent';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -36,11 +37,19 @@ function RootNavigator() {
   const [consentLoaded, setConsentLoaded] = useState(false);
 
   // Charge le consentement RGPD persistant au démarrage.
+  // Borné par un timeout + catch : le splash ne doit jamais rester bloqué ici.
   useEffect(() => {
-    void loadConsent().then((granted) => {
-      setConsent(granted);
-      setConsentLoaded(true);
-    });
+    let active = true;
+    withTimeout(loadConsent(), 5000, false)
+      .catch(() => false)
+      .then((granted) => {
+        if (!active) return;
+        setConsent(granted);
+        setConsentLoaded(true);
+      });
+    return () => {
+      active = false;
+    };
   }, [setConsent]);
 
   // Garde d'authentification + consentement.

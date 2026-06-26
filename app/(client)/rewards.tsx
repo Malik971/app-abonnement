@@ -62,9 +62,9 @@ export default function RewardsScreen() {
         <ScrollView contentContainerStyle={styles.list}>
           {items.length === 0 ? (
             <EmptyState
-              emoji="🎁"
+              icon="🎁"
               title="Aucune récompense"
-              message="Tes commerces n'ont pas encore configuré de récompenses, ou tu n'as pas encore de carte."
+              subtitle="Tes commerces n'ont pas encore configuré de récompenses, ou tu n'as pas encore de carte."
             />
           ) : (
             items.map((item) => {

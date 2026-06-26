@@ -1,16 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
 import { Tabs } from 'expo-router';
 import { useEffect } from 'react';
-import { Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { canSendPush } from '@/constants/plans';
 import { theme } from '@/constants/theme';
 import { useNotifications } from '@/hooks/useNotifications';
 import { fetchMerchantByUser, fetchProgram } from '@/lib/queries';
 import { useAuthStore } from '@/stores/authStore';
 import { useMerchantStore } from '@/stores/merchantStore';
 
-function TabIcon({ emoji, color }: { emoji: string; color: string }) {
-  return <Text style={{ fontSize: 22, color }}>{emoji}</Text>;
+function TabIcon({ emoji, color, locked = false }: { emoji: string; color: string; locked?: boolean }) {
+  return (
+    <View style={styles.iconWrap}>
+      <Text style={{ fontSize: 22, color }}>{emoji}</Text>
+      {locked ? <Text style={styles.lockBadge}>🔒</Text> : null}
+    </View>
+  );
 }
 
 export default function MerchantLayout() {
@@ -64,7 +70,12 @@ export default function MerchantLayout() {
       />
       <Tabs.Screen
         name="notifications"
-        options={{ title: 'Notifs', tabBarIcon: ({ color }) => <TabIcon emoji="🔔" color={color} /> }}
+        options={{
+          title: 'Notifs',
+          tabBarIcon: ({ color }) => (
+            <TabIcon emoji="🔔" color={color} locked={!canSendPush(merchant?.plan ?? 'starter')} />
+          ),
+        }}
       />
       <Tabs.Screen
         name="settings"
@@ -73,3 +84,8 @@ export default function MerchantLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  iconWrap: { width: 28, alignItems: 'center', justifyContent: 'center' },
+  lockBadge: { position: 'absolute', top: -6, right: -8, fontSize: 11 },
+});

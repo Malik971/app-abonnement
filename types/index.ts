@@ -116,11 +116,22 @@ export type Profile = {
 /** Carte de fidélité enrichie pour l'accueil client. */
 export interface LoyaltyCardWithDetails extends LoyaltyCard {
   business_name: string;
+  business_type: string | null;
   rewards: Reward[];
   /** Prochaine récompense pas encore atteinte, ou null si tout est débloqué. */
   next_reward: Reward | null;
   /** Points manquants pour la prochaine récompense (0 si déjà atteignable). */
   points_to_next: number;
+}
+
+/** Résultat de recherche de commerce (fonction search_merchants). */
+export interface MerchantSearchResult {
+  merchant_id: string;
+  business_name: string;
+  business_type: string | null;
+  plan: PlanId;
+  active_clients_count: number;
+  program_id: string;
 }
 
 /** Client vu côté commerçant (liste clients). */
@@ -244,6 +255,14 @@ export interface Database {
       delete_client_data: {
         Args: { p_client_id: string };
         Returns: undefined;
+      };
+      search_merchants: {
+        Args: { p_term: string };
+        Returns: MerchantSearchResult[];
+      };
+      join_loyalty_program: {
+        Args: { p_merchant_id: string };
+        Returns: unknown;
       };
     };
     Enums: Record<string, never>;

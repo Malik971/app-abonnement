@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { MerchantQrCard } from '@/components/merchant/MerchantQrCard';
 import { UpgradeCard } from '@/components/merchant/UpgradeCard';
 import { Banner } from '@/components/ui/Banner';
 import { Card } from '@/components/ui/Card';
@@ -15,6 +16,7 @@ import { useMerchantStore } from '@/stores/merchantStore';
 
 export default function DashboardScreen() {
   const merchant = useMerchantStore((s) => s.merchant);
+  const program = useMerchantStore((s) => s.program);
   const setStats = useMerchantStore((s) => s.setStats);
   const [online, setOnline] = useState(true);
 
@@ -48,6 +50,10 @@ export default function DashboardScreen() {
       >
         <Text style={styles.business}>{merchant?.business_name ?? 'Mon commerce'}</Text>
         <Text style={styles.planTag}>Plan {plan}</Text>
+
+        {program ? (
+          <MerchantQrCard token={program.qr_code_token} businessName={merchant?.business_name ?? 'Mon commerce'} />
+        ) : null}
 
         {!online && dataUpdatedAt ? (
           <Banner tone="neutral" message={`Hors-ligne · données mises à jour il y a ${minutesAgo} min`} />

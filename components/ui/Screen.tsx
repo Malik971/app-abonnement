@@ -11,7 +11,8 @@ interface ScreenProps {
   padded?: boolean;
   edges?: Edge[];
   style?: ViewStyle;
-  refreshControl?: React.ReactElement;
+  // Type exact attendu par ScrollView (React 19 a resserré ReactElement).
+  refreshControl?: React.ComponentProps<typeof ScrollView>['refreshControl'];
 }
 
 export function Screen({

@@ -11,6 +11,7 @@ import type {
   Merchant,
   MerchantClientRow,
   MerchantDashboardStats,
+  MerchantSearchResult,
   PlanId,
   Reward,
 } from '@/types';
@@ -43,7 +44,7 @@ export async function fetchClientByUser(userId: string): Promise<Client | null> 
 export async function fetchClientCards(clientId: string): Promise<LoyaltyCardWithDetails[]> {
   const { data, error } = await supabase
     .from('loyalty_cards')
-    .select('*, loyalty_programs(rewards), merchants(business_name)')
+    .select('*, loyalty_programs(rewards), merchants(business_name, business_type)')
     .eq('client_id', clientId)
     .order('last_visit_at', { ascending: false, nullsFirst: false });
 
@@ -62,6 +63,7 @@ export async function fetchClientCards(clientId: string): Promise<LoyaltyCardWit
       last_visit_at: row.last_visit_at,
       created_at: row.created_at,
       business_name: row.merchants?.business_name ?? 'Commerce',
+      business_type: row.merchants?.business_type ?? null,
       rewards,
       next_reward,
       points_to_next,
@@ -79,7 +81,7 @@ interface RawCard {
   last_visit_at: string | null;
   created_at: string;
   loyalty_programs: { rewards: Reward[] } | null;
-  merchants: { business_name: string } | null;
+  merchants: { business_name: string; business_type: string | null } | null;
 }
 
 /**
@@ -116,6 +118,34 @@ export async function redeemReward(
 
   // Code court lisible à montrer en caisse (8 premiers caractères de l'id).
   return { ok: true, code: data.id.replace(/-/g, '').slice(0, 8).toUpperCase() };
+}
+
+// ── Recherche & adhésion (client) ─────────────────────────────────────────────
+
+/** Recherche un commerce par nom (fonction SQL search_merchants). */
+export async function searchMerchants(term: string): Promise<MerchantSearchResult[]> {
+  const trimmed = term.trim();
+  if (trimmed.length === 0) return [];
+  const { data, error } = await supabase.rpc('search_merchants', { p_term: trimmed });
+  if (error || !data) return [];
+  return data as MerchantSearchResult[];
+}
+
+export interface JoinResult {
+  ok: boolean;
+  error?: 'merchant_full' | 'not_found' | 'no_program' | 'not_authenticated' | 'unknown';
+  cardId?: string;
+  already?: boolean;
+}
+
+/** Rejoint le programme de fidélité d'un commerce (crée la carte, MUR 1 inclus). */
+export async function joinLoyaltyProgram(merchantId: string): Promise<JoinResult> {
+  const { data, error } = await supabase.rpc('join_loyalty_program', {
+    p_merchant_id: merchantId,
+  });
+  if (error) return { ok: false, error: 'unknown' };
+  const res = data as { ok: boolean; error?: JoinResult['error']; card_id?: string; already?: boolean };
+  return { ok: res.ok, error: res.error, cardId: res.card_id, already: res.already };
 }
 
 // ── Commerçant ──────────────────────────────────────────────────────────────
