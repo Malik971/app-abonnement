@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "Fidélité",
+    "slug": "fidelite-guadeloupe",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "fidelite",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#1A56FF"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.fidelite.guadeloupe",
+      "infoPlist": {
+        "NSCameraUsageDescription": "L'accès à la caméra permet de scanner le QR code en caisse pour cumuler vos points de fidélité.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.fidelite.guadeloupe",
+      "adaptiveIcon": {
+        "backgroundColor": "#1A56FF"
+      },
+      "permissions": [
+        "CAMERA",
+        "NOTIFICATIONS"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "L'accès à la caméra permet de scanner le QR code en caisse pour cumuler vos points de fidélité."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#1A56FF"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    }
+  }
+}
