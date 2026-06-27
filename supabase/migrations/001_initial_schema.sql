@@ -5,7 +5,7 @@
 
 -- Profil unifié : associe un utilisateur auth à un rôle (client | merchant).
 -- Le rôle est figé après inscription (changement = opération manuelle).
-create table profiles (
+create table if not exists profiles (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null unique references auth.users(id) on delete cascade,
   role text not null check (role in ('client', 'merchant')),
@@ -13,7 +13,7 @@ create table profiles (
 );
 
 -- Commerçants
-create table merchants (
+create table if not exists merchants (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade,
   business_name text not null,
@@ -28,7 +28,7 @@ create table merchants (
 );
 
 -- Programmes de fidélité (un par commerçant)
-create table loyalty_programs (
+create table if not exists loyalty_programs (
   id uuid primary key default gen_random_uuid(),
   merchant_id uuid references merchants(id) on delete cascade,
   points_per_visit integer not null default 1,
@@ -39,7 +39,7 @@ create table loyalty_programs (
 );
 
 -- Clients finaux
-create table clients (
+create table if not exists clients (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade,
   first_name text,
@@ -49,7 +49,7 @@ create table clients (
 );
 
 -- Cartes de fidélité (relation client <-> programme)
-create table loyalty_cards (
+create table if not exists loyalty_cards (
   id uuid primary key default gen_random_uuid(),
   client_id uuid references clients(id) on delete cascade,
   program_id uuid references loyalty_programs(id) on delete cascade,
@@ -62,7 +62,7 @@ create table loyalty_cards (
 );
 
 -- Scans (historique des passages)
-create table scans (
+create table if not exists scans (
   id uuid primary key default gen_random_uuid(),
   card_id uuid references loyalty_cards(id) on delete cascade,
   client_id uuid references clients(id),
@@ -73,7 +73,7 @@ create table scans (
 );
 
 -- Récompenses débloquées
-create table redeemed_rewards (
+create table if not exists redeemed_rewards (
   id uuid primary key default gen_random_uuid(),
   card_id uuid references loyalty_cards(id) on delete cascade,
   reward_label text not null,
@@ -82,7 +82,7 @@ create table redeemed_rewards (
 );
 
 -- Queue offline (scans en attente de sync)
-create table offline_queue (
+create table if not exists offline_queue (
   id uuid primary key default gen_random_uuid(),
   client_id uuid,
   program_qr_token text not null,
@@ -92,9 +92,9 @@ create table offline_queue (
 );
 
 -- Index utiles aux requêtes fréquentes du dashboard / listes.
-create index idx_loyalty_cards_merchant on loyalty_cards(merchant_id);
-create index idx_loyalty_cards_client on loyalty_cards(client_id);
-create index idx_scans_merchant_synced on scans(merchant_id, synced_at);
-create index idx_scans_card on scans(card_id);
-create index idx_merchants_user on merchants(user_id);
-create index idx_clients_user on clients(user_id);
+create index if not exists idx_loyalty_cards_merchant on loyalty_cards(merchant_id);
+create index if not exists idx_loyalty_cards_client on loyalty_cards(client_id);
+create index if not exists idx_scans_merchant_synced on scans(merchant_id, synced_at);
+create index if not exists idx_scans_card on scans(card_id);
+create index if not exists idx_merchants_user on merchants(user_id);
+create index if not exists idx_clients_user on clients(user_id);
