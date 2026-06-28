@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoyaltyCardView } from '@/components/client/LoyaltyCardView';
 import { Banner } from '@/components/ui/Banner';
+import { BrandHeader } from '@/components/ui/BrandHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { theme } from '@/constants/theme';
 import { useOfflineQueue } from '@/hooks/useOfflineQueue';
@@ -35,10 +36,11 @@ export default function ClientHomeScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      <BrandHeader firstName={client?.first_name} />
       <View style={styles.header}>
         <View style={styles.headerText}>
           <Text style={styles.greeting}>
-            {client?.first_name ? `Bonjour ${client.first_name}` : 'Bonjour 👋'}
+            {client?.first_name ? `Bonjour ${client.first_name}` : 'Bonjour'}
           </Text>
           <Text style={styles.subtitle}>
             {cards.length > 0
@@ -79,7 +81,7 @@ export default function ClientHomeScreen() {
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
           ListEmptyComponent={
             <EmptyState
-              icon="🎟️"
+              icon="card-outline"
               title="Tu n'as pas encore de carte de fidélité"
               subtitle="Scanne le QR code d'un commerce ou recherche-le ici."
               actionLabel="Scanner un QR code"
@@ -104,7 +106,7 @@ const styles = StyleSheet.create({
     paddingTop: theme.spacing.md,
   },
   headerText: { flex: 1 },
-  greeting: { fontSize: theme.fontSize.xl, fontWeight: '800', color: theme.colors.text },
+  greeting: { fontFamily: theme.fonts.titleBold, fontSize: theme.fontSize.xl, color: theme.colors.text },
   subtitle: { fontSize: theme.fontSize.md, color: theme.colors.textSecondary, marginTop: 2 },
   addBtn: {
     paddingHorizontal: theme.spacing.md,

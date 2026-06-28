@@ -1,7 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { Tabs } from 'expo-router';
 import { useEffect } from 'react';
-import { Text } from 'react-native';
 
 import { theme } from '@/constants/theme';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -10,8 +10,8 @@ import { fetchClientByUser } from '@/lib/queries';
 import { useAuthStore } from '@/stores/authStore';
 import { useClientStore } from '@/stores/clientStore';
 
-function TabIcon({ emoji, color }: { emoji: string; color: string }) {
-  return <Text style={{ fontSize: 22, color }}>{emoji}</Text>;
+function TabIcon({ name, color }: { name: keyof typeof Ionicons.glyphMap; color: string }) {
+  return <Ionicons name={name} size={24} color={color} />;
 }
 
 export default function ClientLayout() {
@@ -50,19 +50,19 @@ export default function ClientLayout() {
     >
       <Tabs.Screen
         name="index"
-        options={{ title: 'Mes cartes', tabBarIcon: ({ color }) => <TabIcon emoji="🎟️" color={color} /> }}
+        options={{ title: 'Mes cartes', tabBarIcon: ({ color }) => <TabIcon name="card-outline" color={color} /> }}
       />
       <Tabs.Screen
         name="scan"
-        options={{ title: 'Scanner', tabBarIcon: ({ color }) => <TabIcon emoji="📷" color={color} /> }}
+        options={{ title: 'Scanner', tabBarIcon: ({ color }) => <TabIcon name="scan-outline" color={color} /> }}
       />
       <Tabs.Screen
         name="rewards"
-        options={{ title: 'Récompenses', tabBarIcon: ({ color }) => <TabIcon emoji="🎁" color={color} /> }}
+        options={{ title: 'Récompenses', tabBarIcon: ({ color }) => <TabIcon name="gift-outline" color={color} /> }}
       />
       <Tabs.Screen
         name="profile"
-        options={{ title: 'Profil', tabBarIcon: ({ color }) => <TabIcon emoji="👤" color={color} /> }}
+        options={{ title: 'Profil', tabBarIcon: ({ color }) => <TabIcon name="person-outline" color={color} /> }}
       />
       {/* Écran de recherche : navigable mais masqué de la barre d'onglets. */}
       <Tabs.Screen name="search" options={{ href: null }} />

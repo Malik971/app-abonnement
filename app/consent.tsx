@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { BrandWordmark } from '@/components/ui/BrandWordmark';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
@@ -29,8 +30,9 @@ export default function ConsentScreen() {
 
   return (
     <Screen scroll>
+      <BrandWordmark />
       <View style={styles.header}>
-        <Text style={styles.title}>Bienvenue 👋</Text>
+        <Text style={styles.title}>Bienvenue</Text>
         <Text style={styles.subtitle}>
           Cumule des points chez tes commerces préférés en Guadeloupe.
         </Text>
@@ -73,7 +75,7 @@ function Bullet({ text }: { text: string }) {
 
 const styles = StyleSheet.create({
   header: { marginTop: theme.spacing.xl, marginBottom: theme.spacing.xl },
-  title: { fontSize: theme.fontSize.display, fontWeight: '800', color: theme.colors.text },
+  title: { fontSize: theme.fontSize.display, fontFamily: theme.fonts.titleBold, color: theme.colors.text },
   subtitle: {
     fontSize: theme.fontSize.lg,
     color: theme.colors.textSecondary,

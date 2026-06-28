@@ -1,16 +1,13 @@
 {
   "expo": {
-    "name": "Fidélité",
+    "name": "Fidéli",
     "slug": "fidelite-guadeloupe",
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "fidelite",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "splash": {
-      "resizeMode": "contain",
-      "backgroundColor": "#E8420A"
-    },
+    "icon": "./assets/brand/app_icon.png",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.fidelite.guadeloupe",
@@ -22,7 +19,8 @@
     "android": {
       "package": "com.fidelite.guadeloupe",
       "adaptiveIcon": {
-        "backgroundColor": "#E8420A"
+        "foregroundImage": "./assets/brand/app_icon.png",
+        "backgroundColor": "#D62828"
       },
       "permissions": [
         "CAMERA",
@@ -32,6 +30,15 @@
     "plugins": [
       "expo-router",
       [
+        "expo-splash-screen",
+        {
+          "image": "./assets/brand/logo_blanc_splash.png",
+          "backgroundColor": "#D62828",
+          "resizeMode": "contain",
+          "imageWidth": 220
+        }
+      ],
+      [
         "expo-camera",
         {
           "cameraPermission": "L'accès à la caméra permet de scanner le QR code en caisse pour cumuler vos points de fidélité."
@@ -40,7 +47,7 @@
       [
         "expo-notifications",
         {
-          "color": "#E8420A"
+          "color": "#D62828"
         }
       ],
       "expo-asset"

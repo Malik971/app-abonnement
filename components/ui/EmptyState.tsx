@@ -1,10 +1,11 @@
+import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
 
 interface EmptyStateProps {
-  icon: string; // emoji simple (pas de lib d'icônes)
+  icon: keyof typeof Ionicons.glyphMap; // icône au trait (aucun emoji dans l'app)
   title: string;
   subtitle?: string;
   actionLabel?: string;
@@ -24,7 +25,9 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.icon}>{icon}</Text>
+      <View style={styles.iconWrap}>
+        <Ionicons name={icon} size={44} color={theme.colors.primary} />
+      </View>
       <Text style={styles.title}>{title}</Text>
       {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       {actionLabel && onAction ? (
@@ -47,7 +50,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     backgroundColor: 'transparent',
   },
-  icon: { fontSize: 64, marginBottom: theme.spacing.md },
+  iconWrap: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: theme.spacing.md,
+  },
   title: {
     fontSize: theme.fontSize.xl,
     fontWeight: '800',

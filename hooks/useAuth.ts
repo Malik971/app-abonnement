@@ -2,8 +2,14 @@
  * Authentification & rôles.
  *
  * Deux types de comptes dans la même app :
- *   - client  : connexion par téléphone (OTP SMS), fallback email magic link.
+ *   - client  : connexion par email + mot de passe (prénom à l'inscription).
  *   - merchant: connexion par email + mot de passe.
+ *
+ * Choix email+mot de passe (et non OTP SMS/email) : aucune dépendance à un envoi
+ * d'email/SMS côté Supabase, donc rien à configurer (SMTP, fournisseur SMS) pour
+ * que l'inscription/connexion fonctionnent en démo. Pré-requis Supabase :
+ * Authentication → Providers → Email activé, et « Confirm email » DÉSACTIVÉ
+ * (sinon `signUp` ne renvoie pas de session et l'utilisateur reste bloqué).
  *
  * Le rôle est stocké dans user_metadata ET dans la table `profiles`.
  * Il est figé après inscription (changement = opération manuelle).
@@ -178,76 +184,39 @@ export async function signInMerchant(email: string, password: string): Promise<{
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Actions — Client (OTP téléphone, fallback email magic link)
+// Actions — Client (email + mot de passe)
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Envoie un code OTP par SMS. */
-export async function startPhoneSignIn(phone: string): Promise<{ error?: string }> {
-  const { error } = await supabase.auth.signInWithOtp({ phone: phone.trim() });
-  return error ? { error: error.message } : {};
+export interface ClientSignUp {
+  email: string;
+  password: string;
+  firstName: string;
 }
 
-/**
- * Vérifie le code OTP SMS et provisionne le profil client.
- * `firstName` est optionnel : fourni à l'inscription, omis à la connexion d'un
- * compte existant (on n'écrase pas le prénom déjà enregistré).
- */
-export async function verifyPhoneSignIn(
-  phone: string,
-  token: string,
-  firstName = '',
-): Promise<{ error?: string }> {
-  const { data, error } = await supabase.auth.verifyOtp({
-    phone: phone.trim(),
-    token: token.trim(),
-    type: 'sms',
+/** Inscription client : crée le compte, le profil et la ligne `clients`. */
+export async function signUpClient(input: ClientSignUp): Promise<{ error?: string }> {
+  const { data, error } = await supabase.auth.signUp({
+    email: input.email.trim(),
+    password: input.password,
+    options: { data: { role: 'client', first_name: input.firstName.trim() } },
   });
   if (error) return { error: error.message };
 
   const userId = data.user?.id;
   if (userId) {
-    const name = firstName.trim();
-    if (name) {
-      await supabase.auth.updateUser({ data: { role: 'client', first_name: name } });
-    }
     await ensureProfile(userId, 'client');
-    await ensureClientRow(userId, name, phone.trim());
+    await ensureClientRow(userId, input.firstName.trim(), null);
   }
   return {};
 }
 
-/** Fallback : envoie un magic link par email si le SMS n'est pas configuré. */
-export async function startEmailMagicLink(email: string): Promise<{ error?: string }> {
-  const { error } = await supabase.auth.signInWithOtp({
+/** Connexion client. */
+export async function signInClient(email: string, password: string): Promise<{ error?: string }> {
+  const { error } = await supabase.auth.signInWithPassword({
     email: email.trim(),
-    options: { data: { role: 'client' } },
+    password,
   });
   return error ? { error: error.message } : {};
-}
-
-/** Vérifie le code OTP reçu par email. */
-export async function verifyEmailOtp(
-  email: string,
-  token: string,
-  firstName = '',
-): Promise<{ error?: string }> {
-  const { data, error } = await supabase.auth.verifyOtp({
-    email: email.trim(),
-    token: token.trim(),
-    type: 'email',
-  });
-  if (error) return { error: error.message };
-
-  const userId = data.user?.id;
-  if (userId) {
-    const name = firstName.trim();
-    if (name) {
-      await supabase.auth.updateUser({ data: { role: 'client', first_name: name } });
-    }
-    await ensureProfile(userId, 'client');
-    await ensureClientRow(userId, name, null);
-  }
-  return {};
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -2,11 +2,12 @@ import { Link } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { BrandWordmark } from '@/components/ui/BrandWordmark';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
-import { signUpMerchant, startEmailMagicLink, verifyEmailOtp } from '@/hooks/useAuth';
+import { signUpClient, signUpMerchant } from '@/hooks/useAuth';
 import type { UserRole } from '@/types';
 import { RoleToggle } from './login';
 
@@ -15,6 +16,7 @@ export default function RegisterScreen() {
 
   return (
     <Screen scroll>
+      <BrandWordmark />
       <View style={styles.header}>
         <Text style={styles.title}>Créer un compte</Text>
         <Text style={styles.subtitle}>C'est rapide et gratuit pour les clients.</Text>
@@ -37,37 +39,22 @@ export default function RegisterScreen() {
 function ClientRegister() {
   const [firstName, setFirstName] = useState('');
   const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function sendCode() {
+  async function submit() {
     setLoading(true);
     setError(null);
-    const { error } = await startEmailMagicLink(email);
+    const { error } = await signUpClient({ email, password, firstName });
     setLoading(false);
     if (error) setError(error);
-    else setOtpSent(true);
-  }
-
-  async function verify() {
-    setLoading(true);
-    setError(null);
-    const { error } = await verifyEmailOtp(email, code, firstName);
-    setLoading(false);
-    if (error) setError(error);
+    // Succès : la redirection est gérée par la garde du root layout.
   }
 
   return (
     <View>
-      <Input
-        label="Prénom"
-        placeholder="Ton prénom"
-        value={firstName}
-        onChangeText={setFirstName}
-        editable={!otpSent}
-      />
+      <Input label="Prénom" placeholder="Ton prénom" value={firstName} onChangeText={setFirstName} />
       <Input
         label="Email"
         placeholder="tonemail@exemple.com"
@@ -76,28 +63,21 @@ function ClientRegister() {
         autoComplete="email"
         value={email}
         onChangeText={setEmail}
-        editable={!otpSent}
       />
-      {otpSent ? (
-        <Input
-          label="Code reçu par email"
-          placeholder="123456"
-          keyboardType="number-pad"
-          value={code}
-          onChangeText={setCode}
-        />
-      ) : null}
+      <Input
+        label="Mot de passe"
+        placeholder="Au moins 6 caractères"
+        secureTextEntry
+        value={password}
+        onChangeText={setPassword}
+      />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      {otpSent ? (
-        <Button label="Valider mon compte" onPress={verify} loading={loading} />
-      ) : (
-        <Button
-          label="Recevoir le code"
-          onPress={sendCode}
-          loading={loading}
-          disabled={!firstName || !email}
-        />
-      )}
+      <Button
+        label="Créer mon compte"
+        onPress={submit}
+        loading={loading}
+        disabled={!firstName || !email || password.length < 6}
+      />
     </View>
   );
 }
@@ -159,8 +139,8 @@ function MerchantRegister() {
 }
 
 const styles = StyleSheet.create({
-  header: { marginTop: theme.spacing.xl, marginBottom: theme.spacing.lg },
-  title: { fontSize: theme.fontSize.display, fontWeight: '800', color: theme.colors.text },
+  header: { marginTop: theme.spacing.md, marginBottom: theme.spacing.lg },
+  title: { fontSize: theme.fontSize.display, fontFamily: theme.fonts.titleBold, color: theme.colors.text },
   subtitle: { fontSize: theme.fontSize.lg, color: theme.colors.textSecondary, marginTop: theme.spacing.xs },
   error: { color: theme.colors.danger, marginBottom: theme.spacing.md, fontSize: theme.fontSize.sm },
   success: { color: theme.colors.success, fontSize: theme.fontSize.md, fontWeight: '600' },

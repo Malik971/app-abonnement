@@ -1,7 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { Tabs } from 'expo-router';
 import { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { canSendPush } from '@/constants/plans';
 import { theme } from '@/constants/theme';
@@ -10,11 +11,23 @@ import { fetchMerchantByUser, fetchProgram } from '@/lib/queries';
 import { useAuthStore } from '@/stores/authStore';
 import { useMerchantStore } from '@/stores/merchantStore';
 
-function TabIcon({ emoji, color, locked = false }: { emoji: string; color: string; locked?: boolean }) {
+function TabIcon({
+  name,
+  color,
+  locked = false,
+}: {
+  name: keyof typeof Ionicons.glyphMap;
+  color: string;
+  locked?: boolean;
+}) {
   return (
     <View style={styles.iconWrap}>
-      <Text style={{ fontSize: 22, color }}>{emoji}</Text>
-      {locked ? <Text style={styles.lockBadge}>🔒</Text> : null}
+      <Ionicons name={name} size={24} color={color} />
+      {locked ? (
+        <View style={styles.lockBadge}>
+          <Ionicons name="lock-closed" size={10} color={theme.colors.surface} />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -62,24 +75,24 @@ export default function MerchantLayout() {
     >
       <Tabs.Screen
         name="dashboard"
-        options={{ title: 'Tableau de bord', tabBarIcon: ({ color }) => <TabIcon emoji="📊" color={color} /> }}
+        options={{ title: 'Tableau de bord', tabBarIcon: ({ color }) => <TabIcon name="stats-chart-outline" color={color} /> }}
       />
       <Tabs.Screen
         name="clients"
-        options={{ title: 'Clients', tabBarIcon: ({ color }) => <TabIcon emoji="👥" color={color} /> }}
+        options={{ title: 'Clients', tabBarIcon: ({ color }) => <TabIcon name="people-outline" color={color} /> }}
       />
       <Tabs.Screen
         name="notifications"
         options={{
           title: 'Notifs',
           tabBarIcon: ({ color }) => (
-            <TabIcon emoji="🔔" color={color} locked={!canSendPush(merchant?.plan ?? 'starter')} />
+            <TabIcon name="notifications-outline" color={color} locked={!canSendPush(merchant?.plan ?? 'starter')} />
           ),
         }}
       />
       <Tabs.Screen
         name="settings"
-        options={{ title: 'Réglages', tabBarIcon: ({ color }) => <TabIcon emoji="⚙️" color={color} /> }}
+        options={{ title: 'Réglages', tabBarIcon: ({ color }) => <TabIcon name="settings-outline" color={color} /> }}
       />
     </Tabs>
   );
@@ -87,5 +100,15 @@ export default function MerchantLayout() {
 
 const styles = StyleSheet.create({
   iconWrap: { width: 28, alignItems: 'center', justifyContent: 'center' },
-  lockBadge: { position: 'absolute', top: -6, right: -8, fontSize: 11 },
+  lockBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -8,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: theme.colors.locked,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

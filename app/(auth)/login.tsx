@@ -2,11 +2,12 @@ import { Link } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { BrandWordmark } from '@/components/ui/BrandWordmark';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
-import { signInMerchant, startPhoneSignIn, verifyPhoneSignIn } from '@/hooks/useAuth';
+import { signInClient, signInMerchant } from '@/hooks/useAuth';
 import type { UserRole } from '@/types';
 
 export default function LoginScreen() {
@@ -14,6 +15,7 @@ export default function LoginScreen() {
 
   return (
     <Screen scroll>
+      <BrandWordmark />
       <View style={styles.header}>
         <Text style={styles.title}>Connexion</Text>
         <Text style={styles.subtitle}>Heureux de te revoir.</Text>
@@ -56,25 +58,15 @@ export function RoleToggle({
 }
 
 function ClientLogin() {
-  const [phone, setPhone] = useState('');
-  const [code, setCode] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function sendCode() {
+  async function submit() {
     setLoading(true);
     setError(null);
-    const { error } = await startPhoneSignIn(phone);
-    setLoading(false);
-    if (error) setError(error);
-    else setOtpSent(true);
-  }
-
-  async function verify() {
-    setLoading(true);
-    setError(null);
-    const { error } = await verifyPhoneSignIn(phone, code);
+    const { error } = await signInClient(email, password);
     setLoading(false);
     if (error) setError(error);
     // Succès : la redirection est gérée par la garde du root layout.
@@ -83,29 +75,28 @@ function ClientLogin() {
   return (
     <View>
       <Input
-        label="Téléphone"
-        placeholder="+590 690 00 00 00"
-        keyboardType="phone-pad"
-        autoComplete="tel"
-        value={phone}
-        onChangeText={setPhone}
-        editable={!otpSent}
+        label="Email"
+        placeholder="prenom@email.com"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoComplete="email"
+        value={email}
+        onChangeText={setEmail}
       />
-      {otpSent ? (
-        <Input
-          label="Code reçu par SMS"
-          placeholder="123456"
-          keyboardType="number-pad"
-          value={code}
-          onChangeText={setCode}
-        />
-      ) : null}
+      <Input
+        label="Mot de passe"
+        placeholder="••••••••"
+        secureTextEntry
+        value={password}
+        onChangeText={setPassword}
+      />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      {otpSent ? (
-        <Button label="Se connecter" onPress={verify} loading={loading} />
-      ) : (
-        <Button label="Recevoir le code" onPress={sendCode} loading={loading} disabled={!phone} />
-      )}
+      <Button
+        label="Se connecter"
+        onPress={submit}
+        loading={loading}
+        disabled={!email || !password}
+      />
     </View>
   );
 }
@@ -149,8 +140,8 @@ function MerchantLogin() {
 }
 
 const styles = StyleSheet.create({
-  header: { marginTop: theme.spacing.xl, marginBottom: theme.spacing.lg },
-  title: { fontSize: theme.fontSize.display, fontWeight: '800', color: theme.colors.text },
+  header: { marginTop: theme.spacing.md, marginBottom: theme.spacing.lg },
+  title: { fontSize: theme.fontSize.display, fontFamily: theme.fonts.titleBold, color: theme.colors.text },
   subtitle: { fontSize: theme.fontSize.lg, color: theme.colors.textSecondary, marginTop: theme.spacing.xs },
   toggle: {
     flexDirection: 'row',

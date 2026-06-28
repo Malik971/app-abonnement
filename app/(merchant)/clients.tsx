@@ -60,7 +60,7 @@ export default function ClientsScreen() {
             ) : null
           }
           ListEmptyComponent={
-            <EmptyState icon="👥" title="Aucun client" subtitle="Tes clients apparaîtront ici après leur premier passage." />
+            <EmptyState icon="people-outline" title="Aucun client" subtitle="Tes clients apparaîtront ici après leur premier passage." />
           }
         />
       )}
@@ -93,7 +93,7 @@ function ClientRow({ client, showBadge }: { client: MerchantClientRow; showBadge
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.colors.background },
   header: { padding: theme.spacing.md },
-  title: { fontSize: theme.fontSize.xxl, fontWeight: '800', color: theme.colors.text },
+  title: { fontSize: theme.fontSize.xxl, fontFamily: theme.fonts.titleBold, color: theme.colors.text },
   subtitle: { fontSize: theme.fontSize.md, color: theme.colors.textSecondary },
   loader: { marginTop: theme.spacing.xxl },
   list: { padding: theme.spacing.md, gap: theme.spacing.sm, flexGrow: 1 },

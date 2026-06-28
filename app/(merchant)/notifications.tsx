@@ -115,7 +115,7 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: theme.fontSize.xxl, fontWeight: '800', color: theme.colors.text, marginBottom: theme.spacing.md, marginTop: theme.spacing.sm },
+  title: { fontSize: theme.fontSize.xxl, fontFamily: theme.fonts.titleBold, color: theme.colors.text, marginBottom: theme.spacing.md, marginTop: theme.spacing.sm },
   lockedPreview: { gap: theme.spacing.md, marginBottom: theme.spacing.md },
   alertText: { fontSize: theme.fontSize.md, color: theme.colors.warning, fontWeight: '600' },
   fakeInput: {

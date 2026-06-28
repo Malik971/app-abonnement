@@ -66,7 +66,7 @@ export default function SearchScreen() {
       {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
       {tooShort ? (
-        <EmptyState icon="🔎" title="Cherche ton commerce" subtitle="Tape au moins 2 lettres du nom du commerce." />
+        <EmptyState icon="search-outline" title="Cherche ton commerce" subtitle="Tape au moins 2 lettres du nom du commerce." />
       ) : isFetching ? (
         <ActivityIndicator style={styles.loader} color={theme.colors.primary} />
       ) : (
@@ -84,7 +84,7 @@ export default function SearchScreen() {
             </Card>
           )}
           ListEmptyComponent={
-            <EmptyState icon="🤷" title="Aucun commerce trouvé" subtitle="Vérifie l'orthographe ou demande son QR code au commerçant." />
+            <EmptyState icon="sad-outline" title="Aucun commerce trouvé" subtitle="Vérifie l'orthographe ou demande son QR code au commerçant." />
           }
         />
       )}

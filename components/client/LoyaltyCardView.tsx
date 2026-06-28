@@ -1,5 +1,8 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Image, StyleSheet, Text, View } from 'react-native';
 
+import { brand } from '@/constants/brand';
 import { theme } from '@/constants/theme';
 
 export interface LoyaltyCardViewProps {
@@ -8,18 +11,17 @@ export interface LoyaltyCardViewProps {
   currentPoints: number;
   nextRewardPoints: number;
   nextRewardLabel: string;
-  color?: string; // couleur personnalisable par commerce (pour plus tard)
+  color?: string; // réservé pour une couleur personnalisable par commerce (plus tard)
 }
 
 const MAX_STAMPS = 20; // 2 lignes de 10 max
 const PER_ROW = 10;
 
 /**
- * Carte à tampons numérique.
- * Grille de pastilles calculée dynamiquement :
+ * Carte à tampons numérique, au style de marque Fidéli :
+ * dégradé orange→rouge, ailes en filigrane, tampons « brillants ».
  *   filled = currentPoints % nextRewardPoints (points du cycle en cours)
- *   total  = nextRewardPoints
- *   total > 20 → on affiche seulement le chiffre, pas de grille.
+ *   total  = nextRewardPoints  ·  total > 20 → progression chiffrée
  */
 export function LoyaltyCardView({
   merchantName,
@@ -27,7 +29,6 @@ export function LoyaltyCardView({
   currentPoints,
   nextRewardPoints,
   nextRewardLabel,
-  color = theme.colors.primary,
 }: LoyaltyCardViewProps) {
   const hasReward = nextRewardPoints > 0 && nextRewardLabel.length > 0;
   const total = hasReward ? nextRewardPoints : 0;
@@ -36,44 +37,55 @@ export function LoyaltyCardView({
   const useGrid = hasReward && total <= MAX_STAMPS;
 
   return (
-    <View style={[styles.card, { backgroundColor: color }]}>
-      {/* En-tête */}
-      <View style={styles.header}>
-        <Text style={styles.business} numberOfLines={1}>
-          {merchantName}
+    <View style={styles.shadow}>
+      <LinearGradient
+        colors={[theme.colors.gradientStart, theme.colors.primary]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.card}
+      >
+        {/* Ailes en filigrane, en haut à droite */}
+        <Image source={brand.wingsA} style={styles.wings} resizeMode="contain" />
+
+        {/* En-tête */}
+        <Text style={styles.label}>CARTE DE FIDÉLITÉ</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.business} numberOfLines={1}>
+            {merchantName}
+          </Text>
+          {businessType ? (
+            <Text style={styles.type} numberOfLines={1}>
+              {businessType}
+            </Text>
+          ) : null}
+        </View>
+
+        {/* Centre : grille de pastilles OU progression chiffrée */}
+        {!hasReward ? (
+          <View style={styles.center}>
+            <Text style={styles.bigNumber}>{currentPoints}</Text>
+            <Text style={styles.bigLabel}>points cumulés</Text>
+          </View>
+        ) : useGrid ? (
+          <StampGrid filled={filled} total={total} />
+        ) : (
+          <View style={styles.center}>
+            <Text style={styles.bigNumber}>
+              {filled} / {total}
+            </Text>
+            <Text style={styles.bigLabel}>points</Text>
+          </View>
+        )}
+
+        {/* Pied : prochaine récompense */}
+        <Text style={styles.footer} numberOfLines={2}>
+          {!hasReward
+            ? 'Continue à cumuler des points'
+            : remaining > 0
+              ? `Encore ${remaining} pour : ${nextRewardLabel}`
+              : `Récompense prête : ${nextRewardLabel}`}
         </Text>
-        {businessType ? (
-          <Text style={styles.type} numberOfLines={1}>
-            {businessType}
-          </Text>
-        ) : null}
-      </View>
-
-      {/* Centre : grille de pastilles OU progression chiffrée */}
-      {!hasReward ? (
-        <View style={styles.center}>
-          <Text style={styles.bigNumber}>{currentPoints}</Text>
-          <Text style={styles.bigLabel}>points cumulés</Text>
-        </View>
-      ) : useGrid ? (
-        <StampGrid filled={filled} total={total} />
-      ) : (
-        <View style={styles.center}>
-          <Text style={styles.bigNumber}>
-            {filled} / {total}
-          </Text>
-          <Text style={styles.bigLabel}>points</Text>
-        </View>
-      )}
-
-      {/* Pied : prochaine récompense */}
-      <Text style={styles.footer} numberOfLines={2}>
-        {!hasReward
-          ? 'Continue à cumuler des points 🎉'
-          : remaining > 0
-            ? `Encore ${remaining} pour : ${nextRewardLabel}`
-            : `Récompense prête : ${nextRewardLabel} 🎁`}
-      </Text>
+      </LinearGradient>
     </View>
   );
 }
@@ -91,7 +103,7 @@ function StampGrid({ filled, total }: { filled: number; total: number }) {
         <View key={rIdx} style={styles.row}>
           {row.map((isFilled, cIdx) => (
             <View key={cIdx} style={[styles.stamp, isFilled ? styles.stampFilled : styles.stampEmpty]}>
-              {isFilled ? <Text style={styles.stampStar}>★</Text> : null}
+              {isFilled ? <Ionicons name="star" size={14} color={theme.colors.accent} /> : null}
             </View>
           ))}
         </View>
@@ -103,44 +115,59 @@ function StampGrid({ filled, total }: { filled: number; total: number }) {
 const STAMP = 26;
 
 const styles = StyleSheet.create({
+  // Ombre rouge portée (sur un wrapper pour que les coins arrondis du dégradé restent nets).
+  shadow: {
+    borderRadius: theme.radius.lg,
+    marginBottom: theme.spacing.md,
+    shadowColor: theme.colors.primary,
+    shadowOpacity: 0.3,
+    shadowRadius: 30,
+    shadowOffset: { width: 0, height: 14 },
+    elevation: 12,
+    backgroundColor: theme.colors.primary, // base d'ombre Android
+  },
   card: {
-    borderRadius: 16,
+    borderRadius: theme.radius.lg,
     padding: theme.spacing.lg,
     minHeight: 200,
+    overflow: 'hidden',
     justifyContent: 'space-between',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: theme.spacing.sm,
+  wings: {
+    position: 'absolute',
+    right: -14,
+    top: 14,
+    width: 150,
+    height: 150 * (68 / 257),
+    opacity: 0.16,
   },
-  business: {
-    flex: 1,
-    color: theme.colors.cardText,
-    fontSize: theme.fontSize.xl,
-    fontWeight: '800',
+  label: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 10,
+    letterSpacing: 3,
+    color: 'rgba(255,255,255,0.85)',
+    marginBottom: theme.spacing.sm,
   },
-  type: {
-    color: theme.colors.cardText,
-    opacity: 0.8,
-    fontSize: theme.fontSize.sm,
-    fontWeight: '600',
-  },
+  headerRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: theme.spacing.sm },
+  business: { flex: 1, fontFamily: theme.fonts.titleBold, color: theme.colors.cardText, fontSize: theme.fontSize.xl },
+  type: { fontFamily: theme.fonts.mono, color: theme.colors.cardText, opacity: 0.8, fontSize: theme.fontSize.sm },
   center: { alignItems: 'center', paddingVertical: theme.spacing.lg },
-  bigNumber: { color: theme.colors.cardText, fontSize: theme.fontSize.display, fontWeight: '800' },
-  bigLabel: { color: theme.colors.cardText, opacity: 0.85, fontSize: theme.fontSize.md },
+  bigNumber: { fontFamily: theme.fonts.titleBold, color: theme.colors.cardText, fontSize: theme.fontSize.display },
+  bigLabel: { fontFamily: theme.fonts.mono, color: theme.colors.cardText, opacity: 0.85, fontSize: theme.fontSize.md },
   grid: { paddingVertical: theme.spacing.md, gap: theme.spacing.sm, alignItems: 'center' },
   row: { flexDirection: 'row', gap: theme.spacing.sm, justifyContent: 'center' },
-  stamp: {
-    width: STAMP,
-    height: STAMP,
-    borderRadius: STAMP / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
+  stamp: { width: STAMP, height: STAMP, borderRadius: STAMP / 2, alignItems: 'center', justifyContent: 'center' },
+  // Pastille gagnée : blanche, halo lumineux + fine bordure dorée (rappel des ailes).
+  stampFilled: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: theme.colors.accent,
+    shadowColor: '#FFFFFF',
+    shadowOpacity: 0.9,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 6,
   },
-  stampFilled: { backgroundColor: '#FFF7E0' },
-  stampEmpty: { borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)', backgroundColor: 'transparent' },
-  stampStar: { color: theme.colors.warning, fontSize: 14, fontWeight: '900' },
-  footer: { color: theme.colors.cardText, fontSize: theme.fontSize.md, fontWeight: '600' },
+  stampEmpty: { borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)', backgroundColor: 'transparent' },
+  footer: { fontFamily: theme.fonts.body, color: theme.colors.cardText, fontSize: theme.fontSize.md },
 });

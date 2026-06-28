@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -34,7 +35,7 @@ export function LockedOverlay({
         accessibilityRole="button"
         accessibilityLabel={label}
       >
-        <Text style={styles.lock}>🔒</Text>
+        <Ionicons name="lock-closed" size={26} color={theme.colors.locked} />
         <Text style={styles.label}>{label}</Text>
       </Pressable>
     </View>
@@ -56,9 +57,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(249,250,251,0.55)',
     gap: theme.spacing.xs,
-  },
-  lock: {
-    fontSize: 28,
   },
   label: {
     fontSize: theme.fontSize.md,

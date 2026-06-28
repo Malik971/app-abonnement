@@ -62,7 +62,7 @@ export default function RewardsScreen() {
         <ScrollView contentContainerStyle={styles.list}>
           {items.length === 0 ? (
             <EmptyState
-              icon="🎁"
+              icon="gift-outline"
               title="Aucune récompense"
               subtitle="Tes commerces n'ont pas encore configuré de récompenses, ou tu n'as pas encore de carte."
             />
@@ -118,7 +118,7 @@ export default function RewardsScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.colors.background },
   header: { padding: theme.spacing.md },
-  title: { fontSize: theme.fontSize.xxl, fontWeight: '800', color: theme.colors.text },
+  title: { fontSize: theme.fontSize.xxl, fontFamily: theme.fonts.titleBold, color: theme.colors.text },
   loader: { marginTop: theme.spacing.xxl },
   list: { padding: theme.spacing.md, gap: theme.spacing.md, flexGrow: 1 },
   item: { gap: theme.spacing.md },

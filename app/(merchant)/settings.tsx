@@ -187,7 +187,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: theme.fontSize.xxl, fontWeight: '800', color: theme.colors.text, marginTop: theme.spacing.sm, marginBottom: theme.spacing.md },
+  title: { fontSize: theme.fontSize.xxl, fontFamily: theme.fonts.titleBold, color: theme.colors.text, marginTop: theme.spacing.sm, marginBottom: theme.spacing.md },
   section: { marginBottom: theme.spacing.md },
   sectionTitle: { fontSize: theme.fontSize.md, fontWeight: '700', color: theme.colors.text, marginBottom: theme.spacing.sm },
   sectionCard: { gap: theme.spacing.sm },

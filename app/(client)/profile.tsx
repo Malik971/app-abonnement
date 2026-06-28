@@ -100,7 +100,7 @@ function Row({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.colors.background },
   content: { padding: theme.spacing.md, gap: theme.spacing.md },
-  title: { fontSize: theme.fontSize.xxl, fontWeight: '800', color: theme.colors.text },
+  title: { fontSize: theme.fontSize.xxl, fontFamily: theme.fonts.titleBold, color: theme.colors.text },
   section: { gap: theme.spacing.sm },
   sectionTitle: { fontSize: theme.fontSize.md, fontWeight: '700', color: theme.colors.text, marginTop: theme.spacing.sm },
   row: { flexDirection: 'row', justifyContent: 'space-between' },

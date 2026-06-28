@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
@@ -123,13 +124,13 @@ export default function ScanScreen() {
           <View style={[styles.resultCard, !result.ok && styles.resultCardError]}>
             {result.offline ? (
               <>
-                <Text style={styles.resultEmoji}>📶</Text>
+                <Ionicons name="cloud-offline-outline" size={56} color={theme.colors.warning} />
                 <Text style={styles.resultTitle}>Passage enregistré</Text>
                 <Text style={styles.resultText}>{result.message}</Text>
               </>
             ) : result.ok ? (
               <>
-                <Text style={styles.resultEmoji}>✅</Text>
+                <Ionicons name="checkmark-circle" size={56} color={theme.colors.success} />
                 <Text style={styles.resultTitle}>
                   +{result.points_earned} point{(result.points_earned ?? 0) > 1 ? 's' : ''} !
                 </Text>
@@ -139,7 +140,7 @@ export default function ScanScreen() {
               </>
             ) : (
               <>
-                <Text style={styles.resultEmoji}>⚠️</Text>
+                <Ionicons name="alert-circle" size={56} color={theme.colors.danger} />
                 <Text style={styles.resultTitle}>Scan impossible</Text>
                 <Text style={styles.resultText}>{result.message}</Text>
               </>
@@ -231,7 +232,6 @@ const styles = StyleSheet.create({
     gap: theme.spacing.xs,
   },
   resultCardError: { backgroundColor: '#FEF2F2' },
-  resultEmoji: { fontSize: 40 },
   resultTitle: { fontSize: theme.fontSize.xl, fontWeight: '800', color: theme.colors.text },
   resultText: { fontSize: theme.fontSize.md, color: theme.colors.textSecondary, textAlign: 'center' },
   resultBtn: { alignSelf: 'stretch', marginTop: theme.spacing.md },
