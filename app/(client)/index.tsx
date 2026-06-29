@@ -3,6 +3,7 @@ import { useRouter, type Href } from 'expo-router';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AddToWalletButton } from '@/components/client/AddToWalletButton';
 import { LoyaltyCardView } from '@/components/client/LoyaltyCardView';
 import { Banner } from '@/components/ui/Banner';
 import { BrandHeader } from '@/components/ui/BrandHeader';
@@ -70,13 +71,17 @@ export default function ClientHomeScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
-            <LoyaltyCardView
-              merchantName={item.business_name}
-              businessType={item.business_type ?? undefined}
-              currentPoints={item.points}
-              nextRewardPoints={item.next_reward?.points_required ?? 0}
-              nextRewardLabel={item.next_reward?.label ?? ''}
-            />
+            <View>
+              <LoyaltyCardView
+                merchantName={item.business_name}
+                businessType={item.business_type ?? undefined}
+                currentPoints={item.points}
+                nextRewardPoints={item.next_reward?.points_required ?? 0}
+                nextRewardLabel={item.next_reward?.label ?? ''}
+              />
+              {/* Bouton Google Wallet (Android uniquement, masqué sur iOS). */}
+              <AddToWalletButton card={item} clientFirstName={client?.first_name ?? null} />
+            </View>
           )}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
           ListEmptyComponent={

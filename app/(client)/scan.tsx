@@ -8,7 +8,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
+import { useGoogleWallet } from '@/hooks/useGoogleWallet';
 import { usePoints } from '@/hooks/usePoints';
+import { fetchClientCards } from '@/lib/queries';
 import { useClientStore } from '@/stores/clientStore';
 import type { ScanResult } from '@/types';
 
@@ -17,6 +19,7 @@ type Mode = 'camera' | 'manual';
 export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const { processScan } = usePoints();
+  const { updatePoints, isAndroid } = useGoogleWallet();
   const client = useClientStore((s) => s.client);
   const queryClient = useQueryClient();
 
@@ -45,10 +48,26 @@ export default function ScanScreen() {
 
       if (res.ok && !res.offline) {
         await queryClient.invalidateQueries({ queryKey: ['client-cards', client?.id] });
+
+        // Met à jour la carte Google Wallet en arrière-plan (Android, silencieux).
+        // On relit la carte fraîche (points + prochaine récompense à jour) et on
+        // lance la mise à jour SANS await pour ne pas retarder le feedback de scan.
+        if (isAndroid && client?.id && res.business_name) {
+          const clientId = client.id;
+          const merchantName = res.business_name;
+          void fetchClientCards(clientId)
+            .then((cards) => {
+              const card = cards.find((c) => c.business_name === merchantName);
+              if (card) void updatePoints(card);
+            })
+            .catch(() => {
+              /* non critique : la carte Wallet sera resynchronisée plus tard */
+            });
+        }
       }
       setBusy(false);
     },
-    [busy, processScan, queryClient, client?.id],
+    [busy, processScan, queryClient, client?.id, isAndroid, updatePoints],
   );
 
   const onScan = useCallback(({ data }: { data: string }) => void runScan(data), [runScan]);

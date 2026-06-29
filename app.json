@@ -24,8 +24,21 @@
       },
       "permissions": [
         "CAMERA",
-        "NOTIFICATIONS"
-      ]
+        "NOTIFICATIONS",
+        "com.google.android.gms.permission.LOYALTY_PROGRAM"
+      ],
+      "intentFilters": [],
+      "queries": {
+        "intents": [
+          {
+            "action": "android.intent.action.VIEW",
+            "data": {
+              "scheme": "https",
+              "host": "pay.google.com"
+            }
+          }
+        ]
+      }
     },
     "plugins": [
       "expo-router",
