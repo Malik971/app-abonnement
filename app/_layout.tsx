@@ -18,9 +18,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SplashScreen as BrandSplash } from '@/components/SplashScreen';
 import { theme } from '@/constants/theme';
 import { useAuthListener } from '@/hooks/useAuth';
-import { withTimeout } from '@/lib/async';
-import { loadConsent } from '@/lib/consent';
+import { ROUTES } from '@/lib/routes';
 import { useAuthStore } from '@/stores/authStore';
+import { useGuestStore } from '@/stores/guestStore';
 
 // On garde le splash natif visible jusqu'à ce que notre splash animé prenne le relais.
 void ExpoSplash.preventAutoHideAsync();
@@ -42,12 +42,18 @@ function RootContent({ fontsLoaded }: { fontsLoaded: boolean }) {
   const initializing = useAuthStore((s) => s.initializing);
   const session = useAuthStore((s) => s.session);
   const role = useAuthStore((s) => s.role);
-  const hasConsent = useAuthStore((s) => s.hasConsent);
-  const setConsent = useAuthStore((s) => s.setConsent);
 
-  const [consentLoaded, setConsentLoaded] = useState(false);
+  const hydrated = useGuestStore((s) => s.hydrated);
+  const onboardingSeen = useGuestStore((s) => s.onboardingSeen);
+  const hydrateGuest = useGuestStore((s) => s.hydrate);
+
   const [minElapsed, setMinElapsed] = useState(false);
   const [splashDone, setSplashDone] = useState(false);
+
+  // Charge l'état invité / onboarding au démarrage.
+  useEffect(() => {
+    void hydrateGuest();
+  }, [hydrateGuest]);
 
   // Durée minimale d'affichage du splash (sinon l'animation clignote).
   useEffect(() => {
@@ -55,47 +61,44 @@ function RootContent({ fontsLoaded }: { fontsLoaded: boolean }) {
     return () => clearTimeout(t);
   }, []);
 
-  // Charge le consentement RGPD persistant au démarrage (borné, jamais bloquant).
+  // Garde de navigation — expérience CLIENT par défaut, jamais de login forcé.
   useEffect(() => {
-    let active = true;
-    withTimeout(loadConsent(), 5000, false)
-      .catch(() => false)
-      .then((granted) => {
-        if (!active) return;
-        setConsent(granted);
-        setConsentLoaded(true);
-      });
-    return () => {
-      active = false;
-    };
-  }, [setConsent]);
-
-  // Garde d'authentification + consentement.
-  useEffect(() => {
-    if (initializing || !consentLoaded) return;
-    const group = segments[0];
-    const inConsent = group === 'consent';
+    if (initializing || !hydrated) return;
+    // Cast : les types de segments générés par Expo Router sont régénérés au
+    // prochain `expo start` (ils ne connaissent pas encore le groupe (onboarding)).
+    const group = segments[0] as string | undefined;
+    const inOnboarding = group === '(onboarding)';
     const inAuth = group === '(auth)';
+    const inMerchant = group === '(merchant)';
+    const inClient = group === '(client)';
 
-    if (!hasConsent) {
-      if (!inConsent) router.replace('/consent');
+    // 1. Connecté → routage strict par rôle (jamais d'interface mélangée).
+    if (session) {
+      if (role === 'merchant' && !inMerchant) router.replace(ROUTES.merchantDashboard);
+      else if (role !== 'merchant' && !inClient) router.replace(ROUTES.clientHome);
       return;
     }
-    if (!session) {
-      if (!inAuth) router.replace('/(auth)/login');
+
+    // 2. Non connecté, jamais vu l'onboarding → onboarding.
+    if (!onboardingSeen) {
+      if (!inOnboarding) router.replace(ROUTES.onboarding);
       return;
     }
-    if (role === 'merchant' && group !== '(merchant)') {
-      router.replace('/(merchant)/dashboard');
-    } else if (role === 'client' && group !== '(client)') {
-      router.replace('/(client)');
-    } else if (!role && !inAuth) {
-      router.replace('/(auth)/login');
-    }
-  }, [initializing, consentLoaded, hasConsent, session, role, segments, router]);
 
-  // « Prête » = polices chargées ET session vérifiée ET consentement résolu ET 2s écoulées.
-  const isReady = fontsLoaded && !initializing && consentLoaded && minElapsed;
+    // 3. Non connecté, onboarding vu :
+    //    - l'espace commerçant exige une connexion,
+    //    - les écrans auth / client (invité) / onboarding sont publics,
+    //    - tout le reste → home client en mode invité.
+    if (inMerchant) {
+      router.replace(ROUTES.merchantLogin);
+      return;
+    }
+    if (inAuth || inClient || inOnboarding) return;
+    router.replace(ROUTES.clientHome);
+  }, [initializing, hydrated, onboardingSeen, session, role, segments, router]);
+
+  // « Prête » = polices chargées ET session vérifiée ET état invité chargé ET 2s écoulées.
+  const isReady = fontsLoaded && !initializing && hydrated && minElapsed;
 
   // Révélation de l'app : zoom arrière (scale 1.04 → 1) + fondu, déclenché quand prête.
   const reveal = useSharedValue(0);
@@ -116,7 +119,7 @@ function RootContent({ fontsLoaded }: { fontsLoaded: boolean }) {
           screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.background } }}
         >
           <Stack.Screen name="index" />
-          <Stack.Screen name="consent" />
+          <Stack.Screen name="(onboarding)" />
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(client)" />
           <Stack.Screen name="(merchant)" />

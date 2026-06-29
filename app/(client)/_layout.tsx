@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Tabs } from 'expo-router';
 import { useEffect } from 'react';
 
+import { AuthSheet } from '@/components/client/AuthSheet';
 import { theme } from '@/constants/theme';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useOfflineQueue } from '@/hooks/useOfflineQueue';
@@ -40,32 +41,41 @@ export default function ClientLayout() {
   }, [client?.id, enablePush]);
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.textSecondary,
-        tabBarStyle: { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border },
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{ title: 'Mes cartes', tabBarIcon: ({ color }) => <TabIcon name="card-outline" color={color} /> }}
-      />
-      <Tabs.Screen
-        name="scan"
-        options={{ title: 'Scanner', tabBarIcon: ({ color }) => <TabIcon name="scan-outline" color={color} /> }}
-      />
-      <Tabs.Screen
-        name="rewards"
-        options={{ title: 'Récompenses', tabBarIcon: ({ color }) => <TabIcon name="gift-outline" color={color} /> }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{ title: 'Profil', tabBarIcon: ({ color }) => <TabIcon name="person-outline" color={color} /> }}
-      />
-      {/* Écran de recherche : navigable mais masqué de la barre d'onglets. */}
-      <Tabs.Screen name="search" options={{ href: null }} />
-    </Tabs>
+    <>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: theme.colors.primary,
+          tabBarInactiveTintColor: theme.colors.textSecondary,
+          tabBarStyle: { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border },
+        }}
+      >
+        <Tabs.Screen
+          name="index"
+          options={{ title: 'Mes cartes', tabBarIcon: ({ color }) => <TabIcon name="card-outline" color={color} /> }}
+        />
+        <Tabs.Screen
+          name="scan"
+          options={{ title: 'Scanner', tabBarIcon: ({ color }) => <TabIcon name="scan-outline" color={color} /> }}
+        />
+        <Tabs.Screen
+          name="rewards"
+          options={{ title: 'Récompenses', tabBarIcon: ({ color }) => <TabIcon name="gift-outline" color={color} /> }}
+        />
+        <Tabs.Screen
+          name="profile"
+          options={{ title: 'Profil', tabBarIcon: ({ color }) => <TabIcon name="person-outline" color={color} /> }}
+        />
+        {/* Écrans navigables mais masqués de la barre d'onglets. */}
+        <Tabs.Screen name="search" options={{ href: null }} />
+        <Tabs.Screen name="card/[id]" options={{ href: null }} />
+        <Tabs.Screen name="privacy" options={{ href: null }} />
+        <Tabs.Screen name="terms" options={{ href: null }} />
+        <Tabs.Screen name="help" options={{ href: null }} />
+      </Tabs>
+
+      {/* Mur de création de compte (mode invité), disponible sur tous les onglets. */}
+      <AuthSheet />
+    </>
   );
 }

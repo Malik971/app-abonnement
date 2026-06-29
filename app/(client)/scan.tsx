@@ -11,7 +11,9 @@ import { theme } from '@/constants/theme';
 import { useGoogleWallet } from '@/hooks/useGoogleWallet';
 import { usePoints } from '@/hooks/usePoints';
 import { fetchClientCards } from '@/lib/queries';
+import { useAuthStore } from '@/stores/authStore';
 import { useClientStore } from '@/stores/clientStore';
+import { useGuestStore } from '@/stores/guestStore';
 import type { ScanResult } from '@/types';
 
 type Mode = 'camera' | 'manual';
@@ -21,7 +23,10 @@ export default function ScanScreen() {
   const { processScan } = usePoints();
   const { updatePoints, isAndroid } = useGoogleWallet();
   const client = useClientStore((s) => s.client);
+  const session = useAuthStore((s) => s.session);
+  const requireAuth = useGuestStore((s) => s.requireAuth);
   const queryClient = useQueryClient();
+  const isGuest = !session;
 
   const [mode, setMode] = useState<Mode>('camera');
   const [manualCode, setManualCode] = useState('');
@@ -84,6 +89,23 @@ export default function ScanScreen() {
   }
 
   const cameraMode = mode === 'camera';
+
+  // Mode invité : scanner = vraie action → on demande la création de compte.
+  if (isGuest) {
+    return (
+      <SafeAreaView style={styles.gated} edges={['top', 'bottom']}>
+        <Ionicons name="qr-code-outline" size={64} color={theme.colors.primary} />
+        <Text style={styles.gatedTitle}>Scanne et cumule tes passages</Text>
+        <Text style={styles.gatedText}>
+          Crée ton compte pour scanner le QR code en caisse et faire grandir tes cartes.
+        </Text>
+        <Button
+          label="Créer mon compte"
+          onPress={() => requireAuth('scanner et cumuler des passages')}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: cameraMode ? '#000' : theme.colors.background }]}>
@@ -151,10 +173,10 @@ export default function ScanScreen() {
               <>
                 <Ionicons name="checkmark-circle" size={56} color={theme.colors.success} />
                 <Text style={styles.resultTitle}>
-                  +{result.points_earned} point{(result.points_earned ?? 0) > 1 ? 's' : ''} !
+                  +{result.points_earned} passage{(result.points_earned ?? 0) > 1 ? 's' : ''} !
                 </Text>
                 <Text style={styles.resultText}>
-                  {result.business_name} · {result.new_total} points au total
+                  {result.business_name} · {result.new_total} passages au total
                 </Text>
               </>
             ) : (
@@ -197,6 +219,26 @@ const FRAME = 250;
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  gated: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.lg,
+    gap: theme.spacing.md,
+  },
+  gatedTitle: {
+    fontFamily: theme.fonts.titleBold,
+    fontSize: theme.fontSize.xl,
+    color: theme.colors.text,
+    textAlign: 'center',
+  },
+  gatedText: {
+    fontSize: theme.fontSize.md,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 21,
+  },
   flex: { flex: 1 },
   centered: {
     flex: 1,

@@ -124,7 +124,7 @@ export default function DashboardScreen() {
                 <Text style={styles.detailLabel}>Meilleurs clients</Text>
                 {(data?.top_clients ?? [{ first_name: 'Marie' }, { first_name: 'Jean' }]).slice(0, 3).map((c, i) => (
                   <Text key={i} style={styles.topClient}>
-                    {i + 1}. {('first_name' in c ? c.first_name : null) || 'Client'} {'points' in c ? `· ${c.points} pts` : ''}
+                    {i + 1}. {('first_name' in c ? c.first_name : null) || 'Client'} {'points' in c ? `· ${c.points} passages` : ''}
                   </Text>
                 ))}
               </Card>

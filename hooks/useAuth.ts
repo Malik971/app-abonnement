@@ -184,39 +184,52 @@ export async function signInMerchant(email: string, password: string): Promise<{
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Actions — Client (email + mot de passe)
+// Actions — Client (OTP par email : prénom + email + code à 6 chiffres)
 // ─────────────────────────────────────────────────────────────────────────────
+//
+// PRÉ-REQUIS Supabase : l'envoi d'email doit être configuré (SMTP custom OU
+// service intégré pour emails de test). Sinon /auth/v1/otp renvoie 500
+// (unexpected_failure). L'UI affiche alors un message clair.
+//
+// Le même flux sert à l'inscription ET à la connexion : signInWithOtp crée le
+// compte s'il n'existe pas (shouldCreateUser), sinon connecte l'existant.
 
-export interface ClientSignUp {
-  email: string;
-  password: string;
-  firstName: string;
+/** Envoie un code OTP à 6 chiffres par email. */
+export async function startEmailOtp(email: string): Promise<{ error?: string }> {
+  const { error } = await supabase.auth.signInWithOtp({
+    email: email.trim(),
+    options: { shouldCreateUser: true, data: { role: 'client' } },
+  });
+  return error ? { error: error.message } : {};
 }
 
-/** Inscription client : crée le compte, le profil et la ligne `clients`. */
-export async function signUpClient(input: ClientSignUp): Promise<{ error?: string }> {
-  const { data, error } = await supabase.auth.signUp({
-    email: input.email.trim(),
-    password: input.password,
-    options: { data: { role: 'client', first_name: input.firstName.trim() } },
+/**
+ * Vérifie le code OTP et provisionne le profil client.
+ * `firstName` est fourni à l'inscription, vide à la reconnexion d'un compte
+ * existant (on n'écrase alors pas le prénom déjà enregistré).
+ */
+export async function verifyEmailOtp(
+  email: string,
+  token: string,
+  firstName = '',
+): Promise<{ error?: string }> {
+  const { data, error } = await supabase.auth.verifyOtp({
+    email: email.trim(),
+    token: token.trim(),
+    type: 'email',
   });
   if (error) return { error: error.message };
 
   const userId = data.user?.id;
   if (userId) {
+    const name = firstName.trim();
+    if (name) {
+      await supabase.auth.updateUser({ data: { role: 'client', first_name: name } });
+    }
     await ensureProfile(userId, 'client');
-    await ensureClientRow(userId, input.firstName.trim(), null);
+    await ensureClientRow(userId, name, null);
   }
   return {};
-}
-
-/** Connexion client. */
-export async function signInClient(email: string, password: string): Promise<{ error?: string }> {
-  const { error } = await supabase.auth.signInWithPassword({
-    email: email.trim(),
-    password,
-  });
-  return error ? { error: error.message } : {};
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

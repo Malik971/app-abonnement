@@ -31,6 +31,8 @@ export type Reward = {
 // Lignes des tables (camelCase évité : on garde les noms SQL pour coller à l'API)
 // ─────────────────────────────────────────────────────────────────────────────
 
+export type MerchantApprovalStatus = 'pending' | 'approved' | 'rejected';
+
 export type Merchant = {
   id: string;
   user_id: string;
@@ -42,6 +44,10 @@ export type Merchant = {
   stripe_subscription_id: string | null;
   push_token: string | null;
   active_clients_count: number;
+  /** Statut de validation manuelle (migration 005). */
+  approval_status: MerchantApprovalStatus;
+  approved_at: string | null;
+  rejection_reason: string | null;
   created_at: string;
 }
 
@@ -60,6 +66,8 @@ export type Client = {
   first_name: string | null;
   phone: string | null;
   push_token: string | null;
+  /** Préférence de notifications push (migration 006). */
+  push_enabled: boolean;
   created_at: string;
 }
 

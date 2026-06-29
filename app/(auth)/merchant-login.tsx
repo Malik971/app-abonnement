@@ -1,43 +1,59 @@
-import { Link } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BrandWordmark } from '@/components/ui/BrandWordmark';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
-import { signUpClient, signUpMerchant } from '@/hooks/useAuth';
-import type { UserRole } from '@/types';
-import { RoleToggle } from './login';
+import { signInMerchant, signUpMerchant } from '@/hooks/useAuth';
+import { ROUTES } from '@/lib/routes';
+import { supabase } from '@/lib/supabase';
 
-export default function RegisterScreen() {
-  const [role, setRole] = useState<UserRole>('client');
+type Mode = 'login' | 'signup';
+
+/**
+ * Espace COMMERÇANT, séparé du parcours client. Connexion email + mot de passe,
+ * avec bascule vers la création de commerce. La redirection après succès est
+ * gérée par la garde racine (rôle merchant → dashboard).
+ */
+export default function MerchantLoginScreen() {
+  const router = useRouter();
+  const [mode, setMode] = useState<Mode>('login');
 
   return (
     <Screen scroll>
       <BrandWordmark />
       <View style={styles.header}>
-        <Text style={styles.title}>Créer un compte</Text>
-        <Text style={styles.subtitle}>C'est rapide et gratuit pour les clients.</Text>
+        <Text style={styles.title}>Espace commerçant</Text>
+        <Text style={styles.subtitle}>
+          {mode === 'login' ? 'Connecte-toi pour gérer ton commerce.' : 'Crée ton commerce en 1 minute.'}
+        </Text>
       </View>
 
-      <RoleToggle role={role} onChange={setRole} />
-
-      {role === 'client' ? <ClientRegister /> : <MerchantRegister />}
-
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Déjà un compte ?</Text>
-        <Link href="/(auth)/login" style={styles.link}>
-          Se connecter
-        </Link>
+      <View style={styles.toggle}>
+        {(['login', 'signup'] as const).map((m) => (
+          <Text
+            key={m}
+            onPress={() => setMode(m)}
+            style={[styles.toggleItem, mode === m && styles.toggleItemActive]}
+          >
+            {m === 'login' ? 'Connexion' : 'Créer mon commerce'}
+          </Text>
+        ))}
       </View>
+
+      {mode === 'login' ? <MerchantLogin /> : <MerchantSignup />}
+
+      <Pressable onPress={() => router.replace(ROUTES.clientHome)} hitSlop={8} style={styles.clientLink}>
+        <Text style={styles.clientText}>Je suis client</Text>
+      </Pressable>
     </Screen>
   );
 }
 
-function ClientRegister() {
-  const [firstName, setFirstName] = useState('');
+function MerchantLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -46,43 +62,30 @@ function ClientRegister() {
   async function submit() {
     setLoading(true);
     setError(null);
-    const { error } = await signUpClient({ email, password, firstName });
+    const { error } = await signInMerchant(email, password);
     setLoading(false);
     if (error) setError(error);
-    // Succès : la redirection est gérée par la garde du root layout.
   }
 
   return (
     <View>
-      <Input label="Prénom" placeholder="Ton prénom" value={firstName} onChangeText={setFirstName} />
       <Input
         label="Email"
-        placeholder="tonemail@exemple.com"
+        placeholder="contact@moncommerce.gp"
         keyboardType="email-address"
         autoCapitalize="none"
         autoComplete="email"
         value={email}
         onChangeText={setEmail}
       />
-      <Input
-        label="Mot de passe"
-        placeholder="Au moins 6 caractères"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
+      <Input label="Mot de passe" placeholder="••••••••" secureTextEntry value={password} onChangeText={setPassword} />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Button
-        label="Créer mon compte"
-        onPress={submit}
-        loading={loading}
-        disabled={!firstName || !email || password.length < 6}
-      />
+      <Button label="Se connecter" onPress={submit} loading={loading} disabled={!email || !password} />
     </View>
   );
 }
 
-function MerchantRegister() {
+function MerchantSignup() {
   const [businessName, setBusinessName] = useState('');
   const [businessType, setBusinessType] = useState('');
   const [email, setEmail] = useState('');
@@ -101,14 +104,20 @@ function MerchantRegister() {
       businessType: businessType || undefined,
     });
     setLoading(false);
-    if (error) setError(error);
-    else setDone(true);
+    if (error) {
+      setError(error);
+      return;
+    }
+    // Prévient l'admin pour validation manuelle (best-effort, ne bloque pas).
+    void supabase.functions.invoke('notify-merchant-signup', {}).catch(() => {});
+    setDone(true);
   }
 
   if (done) {
     return (
       <Text style={styles.success}>
-        Compte créé ! Vérifie ta boîte mail pour confirmer ton adresse, puis connecte-toi.
+        Compte créé ! Ton dossier est en cours de vérification — tu recevras un email dès
+        l'activation (en général sous 24 à 48h).
       </Text>
     );
   }
@@ -142,9 +151,31 @@ const styles = StyleSheet.create({
   header: { marginTop: theme.spacing.md, marginBottom: theme.spacing.lg },
   title: { fontSize: theme.fontSize.display, fontFamily: theme.fonts.titleBold, color: theme.colors.text },
   subtitle: { fontSize: theme.fontSize.lg, color: theme.colors.textSecondary, marginTop: theme.spacing.xs },
+  toggle: {
+    flexDirection: 'row',
+    backgroundColor: theme.colors.primaryLight,
+    borderRadius: theme.radius.md,
+    padding: theme.spacing.xs,
+    marginBottom: theme.spacing.lg,
+  },
+  toggleItem: {
+    flex: 1,
+    textAlign: 'center',
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.radius.sm,
+    color: theme.colors.primary,
+    fontWeight: '600',
+    fontSize: theme.fontSize.sm,
+    overflow: 'hidden',
+  },
+  toggleItemActive: { backgroundColor: theme.colors.surface, color: theme.colors.text },
   error: { color: theme.colors.danger, marginBottom: theme.spacing.md, fontSize: theme.fontSize.sm },
   success: { color: theme.colors.success, fontSize: theme.fontSize.md, fontWeight: '600' },
-  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: theme.spacing.xl, gap: theme.spacing.xs },
-  footerText: { color: theme.colors.textSecondary, fontSize: theme.fontSize.md },
-  link: { color: theme.colors.primary, fontWeight: '700', fontSize: theme.fontSize.md },
+  clientLink: { alignSelf: 'center', paddingVertical: theme.spacing.md, marginTop: theme.spacing.xl },
+  clientText: {
+    color: theme.colors.textSecondary,
+    fontFamily: theme.fonts.mono,
+    fontSize: theme.fontSize.sm,
+    textDecorationLine: 'underline',
+  },
 });

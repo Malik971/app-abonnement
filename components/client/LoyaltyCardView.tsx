@@ -8,9 +8,15 @@ import { theme } from '@/constants/theme';
 export interface LoyaltyCardViewProps {
   merchantName: string;
   businessType?: string;
-  currentPoints: number;
-  nextRewardPoints: number;
-  nextRewardLabel: string;
+  /** Tampons obtenus dans le cycle en cours. */
+  stampsFilled: number;
+  /** Tampons nécessaires pour la récompense (0 = aucune récompense configurée). */
+  stampsTotal: number;
+  rewardLabel: string;
+  /** Passages cumulés (affiché si aucune récompense configurée). */
+  totalVisits?: number;
+  /** Carte de démonstration → badge « Démo ». */
+  isDemo?: boolean;
   color?: string; // réservé pour une couleur personnalisable par commerce (plus tard)
 }
 
@@ -18,21 +24,22 @@ const MAX_STAMPS = 20; // 2 lignes de 10 max
 const PER_ROW = 10;
 
 /**
- * Carte à tampons numérique, au style de marque Fidéli :
- * dégradé orange→rouge, ailes en filigrane, tampons « brillants ».
- *   filled = currentPoints % nextRewardPoints (points du cycle en cours)
- *   total  = nextRewardPoints  ·  total > 20 → progression chiffrée
+ * Carte à TAMPONS numérique, au style de marque Fidéli :
+ * dégradé orange→rouge, ailes en filigrane, pastilles qui s'allument en or.
+ * Aucune notion de « points » : uniquement des tampons / passages.
  */
 export function LoyaltyCardView({
   merchantName,
   businessType,
-  currentPoints,
-  nextRewardPoints,
-  nextRewardLabel,
+  stampsFilled,
+  stampsTotal,
+  rewardLabel,
+  totalVisits = 0,
+  isDemo = false,
 }: LoyaltyCardViewProps) {
-  const hasReward = nextRewardPoints > 0 && nextRewardLabel.length > 0;
-  const total = hasReward ? nextRewardPoints : 0;
-  const filled = hasReward ? currentPoints % nextRewardPoints : 0;
+  const hasReward = stampsTotal > 0 && rewardLabel.length > 0;
+  const total = hasReward ? stampsTotal : 0;
+  const filled = hasReward ? Math.min(stampsFilled, total) : 0;
   const remaining = hasReward ? total - filled : 0;
   const useGrid = hasReward && total <= MAX_STAMPS;
 
@@ -46,6 +53,12 @@ export function LoyaltyCardView({
       >
         {/* Ailes en filigrane, en haut à droite */}
         <Image source={brand.wingsA} style={styles.wings} resizeMode="contain" />
+
+        {isDemo ? (
+          <View style={styles.demoBadge}>
+            <Text style={styles.demoText}>DÉMO</Text>
+          </View>
+        ) : null}
 
         {/* En-tête */}
         <Text style={styles.label}>CARTE DE FIDÉLITÉ</Text>
@@ -63,8 +76,8 @@ export function LoyaltyCardView({
         {/* Centre : grille de pastilles OU progression chiffrée */}
         {!hasReward ? (
           <View style={styles.center}>
-            <Text style={styles.bigNumber}>{currentPoints}</Text>
-            <Text style={styles.bigLabel}>points cumulés</Text>
+            <Text style={styles.bigNumber}>{totalVisits}</Text>
+            <Text style={styles.bigLabel}>passages cumulés</Text>
           </View>
         ) : useGrid ? (
           <StampGrid filled={filled} total={total} />
@@ -73,17 +86,17 @@ export function LoyaltyCardView({
             <Text style={styles.bigNumber}>
               {filled} / {total}
             </Text>
-            <Text style={styles.bigLabel}>points</Text>
+            <Text style={styles.bigLabel}>passages</Text>
           </View>
         )}
 
         {/* Pied : prochaine récompense */}
         <Text style={styles.footer} numberOfLines={2}>
           {!hasReward
-            ? 'Continue à cumuler des points'
+            ? 'Continue à cumuler des passages'
             : remaining > 0
-              ? `Encore ${remaining} pour : ${nextRewardLabel}`
-              : `Récompense prête : ${nextRewardLabel}`}
+              ? `Encore ${remaining} passage${remaining > 1 ? 's' : ''} pour : ${rewardLabel}`
+              : `Récompense prête : ${rewardLabel}`}
         </Text>
       </LinearGradient>
     </View>
@@ -140,6 +153,21 @@ const styles = StyleSheet.create({
     width: 150,
     height: 150 * (68 / 257),
     opacity: 0.16,
+  },
+  demoBadge: {
+    position: 'absolute',
+    top: theme.spacing.md,
+    right: theme.spacing.md,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: theme.radius.full,
+  },
+  demoText: {
+    fontFamily: theme.fonts.monoBold,
+    fontSize: 10,
+    letterSpacing: 1.5,
+    color: theme.colors.primary,
   },
   label: {
     fontFamily: theme.fonts.mono,

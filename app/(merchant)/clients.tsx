@@ -85,7 +85,7 @@ function ClientRow({ client, showBadge }: { client: MerchantClientRow; showBadge
         </View>
         <Text style={styles.lastVisit}>Dernière visite : {lastVisit}</Text>
       </View>
-      <Text style={styles.points}>{client.points} pts</Text>
+      <Text style={styles.points}>{client.points} passages</Text>
     </Card>
   );
 }

@@ -2,8 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { Tabs } from 'expo-router';
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
+import { MerchantPendingScreen } from '@/components/merchant/MerchantPendingScreen';
 import { canSendPush } from '@/constants/plans';
 import { theme } from '@/constants/theme';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -39,7 +40,7 @@ export default function MerchantLayout() {
   const merchant = useMerchantStore((s) => s.merchant);
   const { enablePush } = useNotifications();
 
-  const { data: merchantData } = useQuery({
+  const { data: merchantData, isLoading: merchantLoading } = useQuery({
     queryKey: ['merchant', userId],
     queryFn: () => fetchMerchantByUser(userId!),
     enabled: Boolean(userId),
@@ -63,6 +64,24 @@ export default function MerchantLayout() {
   useEffect(() => {
     if (merchant?.id) void enablePush(merchant.id);
   }, [merchant?.id, enablePush]);
+
+  // Garde de validation : tant que le commerce n'est pas approuvé, pas d'accès
+  // au dashboard. Le statut ne peut être changé que côté serveur (migration 005).
+  if (merchantLoading) {
+    return (
+      <View style={styles.loaderWrap}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </View>
+    );
+  }
+  if (merchantData && merchantData.approval_status !== 'approved') {
+    return (
+      <MerchantPendingScreen
+        status={merchantData.approval_status === 'rejected' ? 'rejected' : 'pending'}
+        reason={merchantData.rejection_reason}
+      />
+    );
+  }
 
   return (
     <Tabs
@@ -99,6 +118,7 @@ export default function MerchantLayout() {
 }
 
 const styles = StyleSheet.create({
+  loaderWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.background },
   iconWrap: { width: 28, alignItems: 'center', justifyContent: 'center' },
   lockBadge: {
     position: 'absolute',

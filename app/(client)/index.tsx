@@ -1,27 +1,34 @@
 import { useQuery } from '@tanstack/react-query';
-import { useRouter, type Href } from 'expo-router';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AddToWalletButton } from '@/components/client/AddToWalletButton';
-import { LoyaltyCardView } from '@/components/client/LoyaltyCardView';
+import { CardStack } from '@/components/client/CardStack';
 import { Banner } from '@/components/ui/Banner';
 import { BrandHeader } from '@/components/ui/BrandHeader';
+import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { DEMO_CARDS } from '@/constants/demoCards';
 import { theme } from '@/constants/theme';
 import { useOfflineQueue } from '@/hooks/useOfflineQueue';
+import { demoCardToView, realCardToView } from '@/lib/cardView';
 import { fetchClientCards } from '@/lib/queries';
+import { ROUTES } from '@/lib/routes';
+import { useAuthStore } from '@/stores/authStore';
 import { useClientStore } from '@/stores/clientStore';
+import { useGuestStore } from '@/stores/guestStore';
 
-// L'écran de recherche est masqué de la barre d'onglets (href: null), donc absent
-// des routes typées, mais il reste navigable au runtime → on caste explicitement.
-const SEARCH_HREF = '/(client)/search' as unknown as Href;
+const DEMO_VIEWS = DEMO_CARDS.map(demoCardToView);
 
 export default function ClientHomeScreen() {
   const router = useRouter();
+  const session = useAuthStore((s) => s.session);
   const client = useClientStore((s) => s.client);
   const setCards = useClientStore((s) => s.setCards);
+  const requireAuth = useGuestStore((s) => s.requireAuth);
   const { pendingCount } = useOfflineQueue();
+
+  const isGuest = !session;
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['client-cards', client?.id],
@@ -33,7 +40,12 @@ export default function ClientHomeScreen() {
     enabled: Boolean(client?.id),
   });
 
-  const cards = data ?? [];
+  const realViews = (data ?? []).map(realCardToView);
+  const views = isGuest ? DEMO_VIEWS : realViews;
+
+  function openCard(id: string) {
+    router.push(ROUTES.card(id));
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -41,20 +53,22 @@ export default function ClientHomeScreen() {
       <View style={styles.header}>
         <View style={styles.headerText}>
           <Text style={styles.greeting}>
-            {client?.first_name ? `Bonjour ${client.first_name}` : 'Bonjour'}
+            {isGuest ? 'Bienvenue' : client?.first_name ? `Bonjour ${client.first_name}` : 'Bonjour'}
           </Text>
           <Text style={styles.subtitle}>
-            {cards.length > 0
-              ? `Tes ${cards.length} carte${cards.length > 1 ? 's' : ''} de fidélité`
-              : 'Tes cartes de fidélité'}
+            {isGuest
+              ? 'Découvre tes cartes de fidélité'
+              : views.length > 0
+                ? `Tes ${views.length} carte${views.length > 1 ? 's' : ''} de fidélité`
+                : 'Tes cartes de fidélité'}
           </Text>
         </View>
-        <Pressable onPress={() => router.push(SEARCH_HREF)} hitSlop={8} style={styles.addBtn}>
+        <Pressable onPress={() => router.push(ROUTES.search)} hitSlop={8} style={styles.addBtn}>
           <Text style={styles.addLabel}>+ Ajouter</Text>
         </Pressable>
       </View>
 
-      {pendingCount > 0 ? (
+      {!isGuest && pendingCount > 0 ? (
         <View style={styles.bannerWrap}>
           <Banner
             tone="warning"
@@ -63,39 +77,43 @@ export default function ClientHomeScreen() {
         </View>
       ) : null}
 
-      {isLoading ? (
+      {!isGuest && isLoading ? (
         <ActivityIndicator style={styles.loader} color={theme.colors.primary} />
       ) : (
-        <FlatList
-          data={cards}
-          keyExtractor={(item) => item.id}
+        <ScrollView
           contentContainerStyle={styles.list}
-          renderItem={({ item }) => (
-            <View>
-              <LoyaltyCardView
-                merchantName={item.business_name}
-                businessType={item.business_type ?? undefined}
-                currentPoints={item.points}
-                nextRewardPoints={item.next_reward?.points_required ?? 0}
-                nextRewardLabel={item.next_reward?.label ?? ''}
+          refreshControl={
+            isGuest ? undefined : <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
+          }
+        >
+          {isGuest ? (
+            <View style={styles.guestBanner}>
+              <Text style={styles.guestTitle}>Tu explores en mode découverte</Text>
+              <Text style={styles.guestText}>
+                Ces cartes sont des exemples. Crée ton compte pour enregistrer tes vraies cartes.
+              </Text>
+              <Button
+                label="Créer mon compte"
+                variant="secondary"
+                onPress={() => requireAuth('enregistrer tes cartes')}
               />
-              {/* Bouton Google Wallet (Android uniquement, masqué sur iOS). */}
-              <AddToWalletButton card={item} clientFirstName={client?.first_name ?? null} />
             </View>
-          )}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
-          ListEmptyComponent={
+          ) : null}
+
+          {views.length > 0 ? (
+            <CardStack cards={views} onPressCard={openCard} />
+          ) : (
             <EmptyState
               icon="card-outline"
               title="Tu n'as pas encore de carte de fidélité"
               subtitle="Scanne le QR code d'un commerce ou recherche-le ici."
               actionLabel="Scanner un QR code"
-              onAction={() => router.push('/(client)/scan')}
+              onAction={() => router.push(ROUTES.scan)}
               secondActionLabel="Chercher un commerce"
-              onSecondAction={() => router.push(SEARCH_HREF)}
+              onSecondAction={() => router.push(ROUTES.search)}
             />
-          }
-        />
+          )}
+        </ScrollView>
       )}
     </SafeAreaView>
   );
@@ -123,4 +141,14 @@ const styles = StyleSheet.create({
   bannerWrap: { paddingHorizontal: theme.spacing.md, paddingTop: theme.spacing.md },
   list: { padding: theme.spacing.md, gap: theme.spacing.md, flexGrow: 1 },
   loader: { marginTop: theme.spacing.xxl },
+  guestBanner: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  guestTitle: { fontFamily: theme.fonts.titleBold, fontSize: theme.fontSize.lg, color: theme.colors.text },
+  guestText: { fontSize: theme.fontSize.sm, color: theme.colors.textSecondary, lineHeight: 19 },
 });

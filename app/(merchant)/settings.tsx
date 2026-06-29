@@ -82,7 +82,7 @@ export default function SettingsScreen() {
   async function shareQr() {
     if (!program) return;
     await Share.share({
-      message: `Scanne ce code chez ${businessName} pour cumuler des points ! Code : ${program.qr_code_token}`,
+      message: `Scanne ce code chez ${businessName} pour cumuler des passages ! Code : ${program.qr_code_token}`,
     });
   }
 
@@ -110,7 +110,7 @@ export default function SettingsScreen() {
       {/* Programme de fidélité */}
       <Section title="Programme de fidélité">
         <Input
-          label="Points par passage"
+          label="Tampons par passage"
           value={pointsPerVisit}
           onChangeText={setPointsPerVisit}
           keyboardType="number-pad"
@@ -120,7 +120,7 @@ export default function SettingsScreen() {
         {rewards.map((r, i) => (
           <View key={`${r.label}-${i}`} style={styles.rewardRow}>
             <Text style={styles.rewardText}>
-              {r.points_required} pts → {r.label}
+              {r.points_required} passages → {r.label}
             </Text>
             <Pressable onPress={() => removeReward(i)} hitSlop={8}>
               <Text style={styles.remove}>Supprimer</Text>
@@ -129,7 +129,7 @@ export default function SettingsScreen() {
         ))}
         <View style={styles.addRow}>
           <View style={styles.addPoints}>
-            <Input placeholder="Pts" value={newPoints} onChangeText={setNewPoints} keyboardType="number-pad" />
+            <Input placeholder="Nb" value={newPoints} onChangeText={setNewPoints} keyboardType="number-pad" />
           </View>
           <View style={styles.addLabel}>
             <Input placeholder="Récompense (ex : Café offert)" value={newLabel} onChangeText={setNewLabel} />

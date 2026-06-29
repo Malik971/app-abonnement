@@ -9,12 +9,16 @@ import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { theme } from '@/constants/theme';
 import { joinLoyaltyProgram, searchMerchants } from '@/lib/queries';
+import { useAuthStore } from '@/stores/authStore';
 import { useClientStore } from '@/stores/clientStore';
+import { useGuestStore } from '@/stores/guestStore';
 import type { MerchantSearchResult } from '@/types';
 
 export default function SearchScreen() {
   const router = useRouter();
   const client = useClientStore((s) => s.client);
+  const session = useAuthStore((s) => s.session);
+  const requireAuth = useGuestStore((s) => s.requireAuth);
   const queryClient = useQueryClient();
   const [term, setTerm] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -27,6 +31,11 @@ export default function SearchScreen() {
   });
 
   async function join(item: MerchantSearchResult) {
+    // Mode invité : rejoindre = vraie action → mur de création de compte.
+    if (!session) {
+      requireAuth('rejoindre ce commerce');
+      return;
+    }
     setBusyId(item.merchant_id);
     setNotice(null);
     const res = await joinLoyaltyProgram(item.merchant_id);
