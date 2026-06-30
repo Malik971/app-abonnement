@@ -8,7 +8,7 @@ import { brand } from '@/constants/brand';
 import { theme } from '@/constants/theme';
 import { ROUTES } from '@/lib/routes';
 
-/** Onboarding — écran 1 : accroche de marque. */
+/** Onboarding, écran 1 : accroche de marque. */
 export default function WelcomeScreen() {
   const router = useRouter();
 

@@ -61,7 +61,7 @@ function RootContent({ fontsLoaded }: { fontsLoaded: boolean }) {
     return () => clearTimeout(t);
   }, []);
 
-  // Garde de navigation — expérience CLIENT par défaut, jamais de login forcé.
+  // Garde de navigation : expérience CLIENT par défaut, jamais de login forcé.
   useEffect(() => {
     if (initializing || !hydrated) return;
     // Cast : les types de segments générés par Expo Router sont régénérés au

@@ -8,7 +8,7 @@ export default function PrivacyScreen() {
     <LegalScreen title="Confidentialité">
       <LegalSection title="1. Responsable du traitement">
         <LegalText>
-          Fidéli — application mobile de fidélité, exploitée en micro-entreprise par Malik Ibo,
+          Fidéli, application mobile de fidélité exploitée en micro-entreprise par Malik Ibo,
           Guadeloupe (971), France. Contact : support@fideli.app
         </LegalText>
       </LegalSection>
@@ -63,7 +63,7 @@ export default function PrivacyScreen() {
         <LegalBullet>Droit d’accès à vos données.</LegalBullet>
         <LegalBullet>Droit de rectification.</LegalBullet>
         <LegalBullet>
-          Droit à l’effacement (« droit à l’oubli ») — accessible directement dans l’app : Profil
+          Droit à l’effacement (« droit à l’oubli »), accessible directement dans l’app : Profil
           &gt; Supprimer mon compte.
         </LegalBullet>
         <LegalBullet>Droit à la portabilité (demande par email).</LegalBullet>

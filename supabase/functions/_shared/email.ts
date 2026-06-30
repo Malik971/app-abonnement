@@ -5,7 +5,7 @@
 //   RESEND_API_KEY : clé API Resend (https://resend.com)
 //   RESEND_FROM    : expéditeur vérifié, ex : "Fidéli <no-reply@tondomaine.fr>"
 //
-// Aucune clé en dur — tout vient des secrets Supabase.
+// Aucune clé en dur, tout vient des secrets Supabase.
 // ============================================================================
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
 const RESEND_FROM = Deno.env.get('RESEND_FROM') ?? '';

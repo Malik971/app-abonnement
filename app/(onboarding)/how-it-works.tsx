@@ -26,7 +26,7 @@ const { width } = Dimensions.get('window');
 const SLIDES = 2;
 const PREVIEW_CARDS = DEMO_CARDS.slice(0, 3).map(demoCardToView);
 
-/** Onboarding — écrans 2 & 3 : explication de la carte à tampons + portefeuille. */
+/** Onboarding, écrans 2 et 3 : explication de la carte à tampons et du portefeuille. */
 export default function HowItWorksScreen() {
   const router = useRouter();
   const markOnboardingSeen = useGuestStore((s) => s.markOnboardingSeen);

@@ -1,5 +1,5 @@
 /**
- * Helpers Stripe (abonnement commerçant uniquement — aucun paiement côté client).
+ * Helpers Stripe (abonnement commerçant uniquement, aucun paiement côté client).
  *
  * Choix d'implémentation (le plus simple, documenté ici) :
  *   - On NE manipule jamais la clé secrète Stripe côté app.
@@ -9,7 +9,7 @@
  *     webhook Stripe (edge function `stripe-webhook`) met à jour le plan en base.
  *
  * Pour une expérience 100 % in-app, on pourrait basculer plus tard sur
- * @stripe/stripe-react-native (PaymentSheet) — la dépendance est déjà installée.
+ * @stripe/stripe-react-native (PaymentSheet) ; la dépendance est déjà installée.
  */
 import { Linking } from 'react-native';
 

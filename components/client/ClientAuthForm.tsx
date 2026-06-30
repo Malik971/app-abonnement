@@ -52,8 +52,11 @@ export function ClientAuthForm({ initialMode = 'signup', onSuccess }: ClientAuth
     const { error } = await startEmailOtp(email);
     setLoading(false);
     if (error) {
+      // Message simple pour le client en production ; détail technique en dev.
       setError(
-        "Envoi du code impossible. Vérifie ton email (et que l'envoi d'emails est activé côté Supabase).",
+        __DEV__
+          ? "Envoi du code impossible. (DEV) En test, Resend n'envoie qu'à l'adresse autorisée du compte ; vérifie aussi la config d'envoi d'emails Supabase."
+          : "Nous n'avons pas pu envoyer ton code pour le moment. Vérifie ton adresse email et réessaie dans un instant.",
       );
       return;
     }

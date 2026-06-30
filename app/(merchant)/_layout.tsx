@@ -119,6 +119,8 @@ export default function MerchantLayout() {
         name="settings"
         options={{ title: 'Réglages', tabBarIcon: ({ color }) => <TabIcon name="settings-outline" color={color} /> }}
       />
+      {/* Écran de personnalisation de la carte : navigable, masqué de la barre. */}
+      <Tabs.Screen name="card-design" options={{ href: null }} />
     </Tabs>
   );
 }

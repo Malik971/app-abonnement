@@ -69,7 +69,7 @@ export function UpgradeCard({
       ) : null}
 
       <Button
-        label={ctaLabel ?? `Passer en ${targetDef.label} — ${targetDef.price_eur}€/mois`}
+        label={ctaLabel ?? `Passer en ${targetDef.label} à ${targetDef.price_eur}€/mois`}
         onPress={onUpgrade}
         loading={loading}
       />

@@ -1,5 +1,5 @@
 -- ============================================================================
--- Migration 002 — Row Level Security (RLS)
+-- Migration 002 : Row Level Security (RLS)
 -- Règles :
 --   - Un commerçant ne voit que ses propres données.
 --   - Un client ne voit que ses propres cartes.

@@ -1,5 +1,5 @@
 /**
- * Thème visuel global de l'application — identité de marque FIDÉLI.
+ * Thème visuel global de l'application : identité de marque FIDÉLI.
  * Slogan : « Chaque passage compte. »
  * Langue de l'interface : français. Textes courts et directs.
  */

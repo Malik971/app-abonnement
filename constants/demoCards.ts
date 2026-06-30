@@ -2,7 +2,7 @@
  * Cartes de DÉMONSTRATION affichées au visiteur (mode invité).
  *
  * ⚠️ Commerces FICTIFS à saveur locale (Guadeloupe), marqués `isDemo: true`.
- * Ne représentent aucun commerce réel — à remplacer par de vrais commerçants
+ * Ne représentent aucun commerce réel, à remplacer par de vrais commerçants
  * pilotes plus tard. Chaque carte montre une progression de tampons déjà
  * entamée pour faire comprendre le concept en un coup d'œil.
  *

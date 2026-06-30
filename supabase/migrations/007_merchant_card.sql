@@ -1,5 +1,5 @@
 -- ============================================================================
--- Migration 007 — Personnalisation de la carte de fidélité
+-- Migration 007 : Personnalisation de la carte de fidélité
 -- Le commerçant peut donner une couleur, une adresse et une description à sa
 -- carte (affichées côté client). Idempotente.
 -- La policy RLS « merchants: mise à jour de son commerce » (002) couvre déjà

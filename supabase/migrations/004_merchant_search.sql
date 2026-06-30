@@ -1,5 +1,5 @@
 -- ============================================================================
--- Migration 004 — Recherche de commerce + adhésion à un programme
+-- Migration 004 : Recherche de commerce + adhésion à un programme
 --
 -- Pourquoi des fonctions SECURITY DEFINER plutôt qu'une policy SELECT large ?
 --   La table merchants contient des colonnes sensibles (stripe_*, push_token).

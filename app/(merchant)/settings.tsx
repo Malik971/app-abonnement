@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
-import { LoyaltyCardView } from '@/components/client/LoyaltyCardView';
 import { UpgradeCard } from '@/components/merchant/UpgradeCard';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -12,7 +11,6 @@ import { Screen } from '@/components/ui/Screen';
 import { PLANS, isInTrial, trialDaysLeft } from '@/constants/plans';
 import { theme } from '@/constants/theme';
 import { signOutUser } from '@/hooks/useAuth';
-import { CARD_COLORS } from '@/lib/color';
 import { openBillingPortal } from '@/lib/stripe';
 import { supabase } from '@/lib/supabase';
 import { useMerchantStore } from '@/stores/merchantStore';
@@ -26,22 +24,26 @@ export default function SettingsScreen() {
 
   const [businessName, setBusinessName] = useState('');
   const [businessType, setBusinessType] = useState('');
+  const [address, setAddress] = useState('');
+  const [website, setWebsite] = useState('');
+  const [description, setDescription] = useState('');
+  const [goalClients, setGoalClients] = useState('50');
+  const [goalDaily, setGoalDaily] = useState('10');
   const [pointsPerVisit, setPointsPerVisit] = useState('1');
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [newPoints, setNewPoints] = useState('');
   const [newLabel, setNewLabel] = useState('');
-  const [cardColor, setCardColor] = useState<string>(CARD_COLORS[0]);
-  const [address, setAddress] = useState('');
-  const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (merchant) {
       setBusinessName(merchant.business_name);
       setBusinessType(merchant.business_type ?? '');
-      setCardColor(merchant.card_color ?? CARD_COLORS[0]);
       setAddress(merchant.address ?? '');
+      setWebsite(merchant.website ?? '');
       setDescription(merchant.description ?? '');
+      setGoalClients(String(merchant.goal_clients ?? 50));
+      setGoalDaily(String(merchant.goal_daily_scans ?? 10));
     }
   }, [merchant]);
 
@@ -68,14 +70,18 @@ export default function SettingsScreen() {
     if (!merchant || !program) return;
     setSaving(true);
 
+    // La couleur de carte se règle dans l'écran dédié "Ma carte" ; ici on gère
+    // l'identité du commerce et ses objectifs.
     await supabase
       .from('merchants')
       .update({
         business_name: businessName.trim(),
         business_type: businessType.trim() || null,
-        card_color: cardColor,
         address: address.trim() || null,
+        website: website.trim() || null,
         description: description.trim() || null,
+        goal_clients: Math.max(1, parseInt(goalClients, 10) || 50),
+        goal_daily_scans: Math.max(1, parseInt(goalDaily, 10) || 10),
       })
       .eq('id', merchant.id);
 
@@ -96,7 +102,7 @@ export default function SettingsScreen() {
   async function shareQr() {
     if (!program) return;
     await Share.share({
-      message: `Scanne ce code chez ${businessName} pour cumuler des passages ! Code : ${program.qr_code_token}`,
+      message: `Scanne ce code chez ${businessName} pour cumuler tes passages ! Code : ${program.qr_code_token}`,
     });
   }
 
@@ -119,6 +125,30 @@ export default function SettingsScreen() {
       <Section title="Mon commerce">
         <Input label="Nom du commerce" value={businessName} onChangeText={setBusinessName} />
         <Input label="Type d'activité" value={businessType} onChangeText={setBusinessType} placeholder="Ex : Restauration" />
+        <Input label="Adresse" value={address} onChangeText={setAddress} placeholder="Ex : 12 rue Frébault, Pointe-à-Pitre" />
+        <Input
+          label="Site web ou lien Google Maps (optionnel)"
+          value={website}
+          onChangeText={setWebsite}
+          placeholder="https://..."
+          autoCapitalize="none"
+          keyboardType="url"
+        />
+        <Input
+          label="Description (optionnel)"
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Ex : Snack créole, bokit et jus frais le midi."
+          multiline
+          style={styles.descInput}
+        />
+      </Section>
+
+      {/* Objectifs */}
+      <Section title="Mes objectifs">
+        <Text style={styles.muted}>Servent à afficher tes anneaux de progression sur le tableau de bord.</Text>
+        <Input label="Objectif clients actifs" value={goalClients} onChangeText={setGoalClients} keyboardType="number-pad" />
+        <Input label="Objectif passages par jour" value={goalDaily} onChangeText={setGoalDaily} keyboardType="number-pad" />
       </Section>
 
       {/* Programme de fidélité */}
@@ -134,7 +164,7 @@ export default function SettingsScreen() {
         {rewards.map((r, i) => (
           <View key={`${r.label}-${i}`} style={styles.rewardRow}>
             <Text style={styles.rewardText}>
-              {r.points_required} passages → {r.label}
+              {r.points_required} passages : {r.label}
             </Text>
             <Pressable onPress={() => removeReward(i)} hitSlop={8}>
               <Text style={styles.remove}>Supprimer</Text>
@@ -150,44 +180,7 @@ export default function SettingsScreen() {
           </View>
         </View>
         <Button label="Ajouter la récompense" variant="secondary" onPress={addReward} />
-      </Section>
-
-      {/* Apparence de la carte (vue côté client) */}
-      <Section title="Apparence de la carte">
-        <View style={styles.previewWrap}>
-          <LoyaltyCardView
-            merchantName={businessName || 'Mon commerce'}
-            businessType={businessType || undefined}
-            stampsFilled={3}
-            stampsTotal={Math.max(1, rewards[0]?.points_required ?? 8)}
-            rewardLabel={rewards[0]?.label ?? 'Ta récompense'}
-            address={address || undefined}
-            color={cardColor}
-          />
-        </View>
-
-        <Text style={styles.label}>Couleur</Text>
-        <View style={styles.swatchRow}>
-          {CARD_COLORS.map((c) => (
-            <Pressable
-              key={c}
-              onPress={() => setCardColor(c)}
-              accessibilityRole="button"
-              accessibilityLabel={`Couleur ${c}`}
-              style={[styles.swatch, { backgroundColor: c }, cardColor === c && styles.swatchSelected]}
-            />
-          ))}
-        </View>
-
-        <Input label="Adresse" value={address} onChangeText={setAddress} placeholder="Ex : 12 rue Frébault, Pointe-à-Pitre" />
-        <Input
-          label="Description"
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Ex : Snack créole, bokit et jus frais le midi."
-          multiline
-          style={styles.descInput}
-        />
+        <Text style={styles.muted}>La couleur et la carte se personnalisent depuis « Ma carte » sur le tableau de bord.</Text>
       </Section>
 
       <Button label="Enregistrer" onPress={save} loading={saving} style={styles.saveBtn} />
@@ -213,7 +206,7 @@ export default function SettingsScreen() {
         </View>
         {merchant && isInTrial(merchant) ? (
           <Text style={styles.muted}>
-            Essai Pro gratuit en cours — {trialDaysLeft(merchant)} jours restants. Sans abonnement,
+            Essai Pro gratuit en cours : {trialDaysLeft(merchant)} jours restants. Sans abonnement,
             tu repasseras en Starter à la fin de l'essai.
           </Text>
         ) : null}
@@ -257,10 +250,6 @@ const styles = StyleSheet.create({
   addRow: { flexDirection: 'row', gap: theme.spacing.sm },
   addPoints: { width: 80 },
   addLabel: { flex: 1 },
-  previewWrap: { marginBottom: theme.spacing.sm },
-  swatchRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm, marginBottom: theme.spacing.sm },
-  swatch: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: theme.colors.border },
-  swatchSelected: { borderWidth: 3, borderColor: theme.colors.text },
   descInput: { height: 88, paddingTop: theme.spacing.sm, textAlignVertical: 'top' },
   saveBtn: { marginBottom: theme.spacing.lg },
   qrWrap: { alignItems: 'center', paddingVertical: theme.spacing.md },

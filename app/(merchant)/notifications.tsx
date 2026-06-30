@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { Alert, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
+import { Ionicons } from '@expo/vector-icons';
+
 import { UpgradeCard } from '@/components/merchant/UpgradeCard';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -55,6 +57,9 @@ export default function NotificationsScreen() {
       <Screen scroll>
         <Text style={styles.title}>Notifications</Text>
 
+        <IntroBlock />
+
+
         <Card style={styles.lockedPreview}>
           <Text style={styles.alertText}>
             {inactiveCount} client{inactiveCount > 1 ? 's' : ''} ne {inactiveCount > 1 ? 'sont' : "s'est"} pas
@@ -70,7 +75,7 @@ export default function NotificationsScreen() {
           <UpgradeCard
             merchantId={merchant.id}
             currentPlan={plan}
-            ctaLabel="Débloquer les notifications — Passer en Pro"
+            ctaLabel="Débloquer les notifications, passer en Pro"
           />
         ) : null}
       </Screen>
@@ -115,8 +120,42 @@ export default function NotificationsScreen() {
   );
 }
 
+/**
+ * Bloc explicatif fixe : un commerçant qui découvre l'app doit comprendre
+ * immédiatement à quoi servent les notifications et comment s'en servir.
+ */
+function IntroBlock() {
+  return (
+    <Card style={styles.intro}>
+      <Text style={styles.introTitle}>À quoi servent les notifications ?</Text>
+      <Text style={styles.introText}>
+        Envoie un message directement sur le téléphone de tes clients pour les faire revenir.
+      </Text>
+      <IntroLine icon="megaphone-outline" text="Relancer un client qui n'est pas revenu depuis longtemps." />
+      <IntroLine icon="gift-outline" text="Prévenir un client qu'il est tout proche de sa récompense." />
+      <IntroLine icon="calendar-outline" text="Annoncer une offre ou un événement du moment." />
+      <Text style={styles.introNote}>Disponible avec le forfait Pro ou Premium.</Text>
+    </Card>
+  );
+}
+
+function IntroLine({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: string }) {
+  return (
+    <View style={styles.introRow}>
+      <Ionicons name={icon} size={18} color={theme.colors.primary} />
+      <Text style={styles.introRowText}>{text}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   title: { fontSize: theme.fontSize.xxl, fontFamily: theme.fonts.titleBold, color: theme.colors.text, marginBottom: theme.spacing.md, marginTop: theme.spacing.sm },
+  intro: { gap: theme.spacing.sm, marginBottom: theme.spacing.md },
+  introTitle: { fontFamily: theme.fonts.titleBold, fontSize: theme.fontSize.lg, color: theme.colors.text },
+  introText: { fontSize: theme.fontSize.md, color: theme.colors.textSecondary, lineHeight: 20 },
+  introRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+  introRowText: { flex: 1, fontSize: theme.fontSize.md, color: theme.colors.text },
+  introNote: { fontSize: theme.fontSize.sm, color: theme.colors.primary, fontFamily: theme.fonts.title, marginTop: theme.spacing.xs },
   lockedPreview: { gap: theme.spacing.md, marginBottom: theme.spacing.md },
   alertText: { fontSize: theme.fontSize.md, color: theme.colors.warning, fontWeight: '600' },
   fakeInput: {

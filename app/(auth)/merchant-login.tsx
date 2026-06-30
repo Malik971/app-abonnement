@@ -116,7 +116,7 @@ function MerchantSignup() {
   if (done) {
     return (
       <Text style={styles.success}>
-        Compte créé ! Ton dossier est en cours de vérification — tu recevras un email dès
+        Compte créé ! Ton dossier est en cours de vérification. Tu recevras un email dès
         l'activation (en général sous 24 à 48h).
       </Text>
     );

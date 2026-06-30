@@ -1,5 +1,5 @@
 -- ============================================================================
--- Migration 005 — Validation manuelle des commerçants
+-- Migration 005 : Validation manuelle des commerçants
 -- Ajoute un statut d'approbation entre l'inscription et l'activation du compte.
 -- Idempotente.
 -- ============================================================================

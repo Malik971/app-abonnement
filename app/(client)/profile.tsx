@@ -64,7 +64,7 @@ function GuestProfile() {
         </View>
 
         <Button label="Créer mon compte" onPress={() => requireAuth('gérer ton profil')} />
-        <Button label="J'ai déjà un compte — Se connecter" variant="ghost" onPress={() => requireAuth(undefined, 'login')} />
+        <Button label="J'ai déjà un compte, me connecter" variant="ghost" onPress={() => requireAuth(undefined, 'login')} />
 
         {/* Légal et aide */}
         <SectionTitle>Légal et aide</SectionTitle>
@@ -161,7 +161,7 @@ function ConnectedProfile() {
           </LinearGradient>
           <View style={styles.identityText}>
             <Text style={styles.name}>{client?.first_name || 'Client'}</Text>
-            <Text style={styles.email}>{email || '—'}</Text>
+            <Text style={styles.email}>{email || 'Non renseigné'}</Text>
           </View>
         </View>
 
@@ -295,7 +295,7 @@ function TutorialRow() {
   return <LinkRow icon="play-circle-outline" label="Revoir le tutoriel" onPress={review} />;
 }
 
-/** Bouton de remise à zéro complète — visible uniquement en développement. */
+/** Bouton de remise à zéro complète, visible uniquement en développement. */
 function DevReset() {
   const router = useRouter();
   const resetOnboarding = useGuestStore((s) => s.resetOnboarding);

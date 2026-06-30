@@ -17,7 +17,7 @@ import { supabase } from '@/lib/supabase';
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     // shouldShowAlert est déprécié mais encore requis par le type ;
-    // shouldShowBanner/List sont les remplaçants SDK 52.
+    // shouldShowBanner/List sont les remplaçants SDK 54.
     shouldShowAlert: true,
     shouldShowBanner: true,
     shouldShowList: true,

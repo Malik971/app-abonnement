@@ -98,7 +98,7 @@ export default function ClientHomeScreen() {
                 onPress={() => requireAuth('enregistrer tes cartes')}
               />
               <Pressable onPress={() => requireAuth(undefined, 'login')} hitSlop={6} style={styles.guestLogin}>
-                <Text style={styles.guestLoginText}>J'ai déjà un compte — Se connecter</Text>
+                <Text style={styles.guestLoginText}>J'ai déjà un compte, me connecter</Text>
               </Pressable>
             </View>
           ) : null}

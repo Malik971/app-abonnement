@@ -12,7 +12,7 @@ import {
   trialDaysLeft,
 } from '@/constants/plans';
 
-describe('MUR 1 — limite de clients', () => {
+describe('MUR 1 : limite de clients', () => {
   it('bloque le plan starter à 50 clients', () => {
     expect(hasReachedClientLimit('starter', 49)).toBe(false);
     expect(hasReachedClientLimit('starter', 50)).toBe(true);
@@ -25,7 +25,7 @@ describe('MUR 1 — limite de clients', () => {
   });
 });
 
-describe('MUR 2 — notifications push', () => {
+describe('MUR 2 : notifications push', () => {
   it('verrouille les push en starter', () => {
     expect(canSendPush('starter')).toBe(false);
   });
@@ -35,7 +35,7 @@ describe('MUR 2 — notifications push', () => {
   });
 });
 
-describe('MUR 3 — stats détaillées', () => {
+describe('MUR 3 : stats détaillées', () => {
   it('verrouille les stats détaillées en starter', () => {
     expect(canSeeDetailedStats('starter')).toBe(false);
   });
@@ -53,7 +53,7 @@ describe('nextPlan', () => {
   });
 });
 
-describe('PLANS — cohérence des prix', () => {
+describe('PLANS : cohérence des prix', () => {
   it('respecte la grille tarifaire', () => {
     expect(PLANS.starter.price_eur).toBe(0);
     expect(PLANS.pro.price_eur).toBe(29.99);
@@ -61,7 +61,7 @@ describe('PLANS — cohérence des prix', () => {
   });
 });
 
-describe('Essai Pro — plan effectif', () => {
+describe('Essai Pro : plan effectif', () => {
   const future = new Date(Date.now() + 30 * 86_400_000).toISOString();
   const past = new Date(Date.now() - 1 * 86_400_000).toISOString();
 

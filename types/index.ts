@@ -19,7 +19,7 @@ export type PlanId = 'starter' | 'pro' | 'premium';
 /**
  * Forme d'une récompense stockée dans loyalty_programs.rewards (jsonb).
  * NOTE : les types de lignes sont déclarés en `type` (et non `interface`) car
- * supabase-js exige qu'ils soient assignables à `Record<string, unknown>` —
+ * supabase-js exige qu'ils soient assignables à `Record<string, unknown>`,
  * ce que les interfaces ne sont pas (pas de signature d'index implicite).
  */
 export type Reward = {
@@ -54,6 +54,10 @@ export type Merchant = {
   description: string | null;
   /** Fin de l'essai Pro gratuit (migration 008). */
   trial_ends_at: string | null;
+  /** Objectifs et coordonnées (migration 009). */
+  goal_clients: number;
+  goal_daily_scans: number;
+  website: string | null;
   created_at: string;
 }
 
@@ -115,7 +119,7 @@ export type OfflineQueueRow = {
   synced_at: string | null;
 }
 
-/** Profil unifié (colonne `role`) — voir migration 001. */
+/** Profil unifié (colonne `role`), voir migration 001. */
 export type Profile = {
   id: string;
   user_id: string;

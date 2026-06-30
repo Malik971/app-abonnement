@@ -1,5 +1,5 @@
 -- ============================================================================
--- Migration 008 — Essai Pro gratuit de 2 mois
+-- Migration 008 : Essai Pro gratuit de 2 mois
 -- Tout nouveau commerçant bénéficie de 60 jours d'accès aux fonctionnalités Pro
 -- dès la création de son compte. Passé ce délai, sans abonnement payant, il
 -- repasse en Starter (le plan « effectif » est calculé côté app + edge function).

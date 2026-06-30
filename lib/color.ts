@@ -31,16 +31,22 @@ export function cardGradient(base: string): [string, string, string] {
   return [shade(base, 0.12), base, shade(base, -0.22)];
 }
 
-/** Palette proposée au commerçant (couleurs saturées, lisibles avec du texte blanc). */
-export const CARD_COLORS = [
-  '#D62828', // rouge Fidéli (défaut)
-  '#C1121F', // rouge foncé
-  '#E76F51', // terracotta
-  '#F2A900', // or
-  '#16A34A', // vert
-  '#0D9488', // teal
-  '#2563EB', // bleu
-  '#7C3AED', // violet
-  '#DB2777', // rose
-  '#1D2230', // bleu nuit
+/** Couleur de carte par défaut (rouge Fidéli). */
+export const DEFAULT_CARD_COLOR = '#D62828';
+
+/**
+ * Palette proposée au commerçant pour personnaliser sa carte (36 teintes :
+ * chaudes, froides, neutres et couleurs de marque). Toutes restent lisibles
+ * avec du texte blanc.
+ */
+export const CARD_PALETTE = [
+  // Chaudes
+  '#D62828', '#C1121F', '#E63946', '#E76F51', '#F4A261', '#F2A900',
+  '#FF6B6B', '#FF8FAB', '#DB2777', '#B5179E', '#9D174D', '#A0522D',
+  // Froides
+  '#7C3AED', '#6D28D9', '#4338CA', '#2563EB', '#1D4ED8', '#0EA5E9',
+  '#06B6D4', '#0D9488', '#0F766E', '#16A34A', '#15803D', '#4D7C0F',
+  // Neutres et profondes
+  '#1D2230', '#0F172A', '#111827', '#334155', '#475569', '#64748B',
+  '#3F3F46', '#52525B', '#2F4F4F', '#654321', '#8D5524', '#5B21B6',
 ] as const;

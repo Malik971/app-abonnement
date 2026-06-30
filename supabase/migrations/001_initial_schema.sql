@@ -1,5 +1,5 @@
 -- ============================================================================
--- Migration 001 — Tables principales
+-- Migration 001 : Tables principales
 -- Application de fidélité (commerçants + clients finaux)
 -- ============================================================================
 

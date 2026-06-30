@@ -149,7 +149,7 @@ async function ensureMerchantRow(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Actions — Commerçant (email + mot de passe)
+// Actions :Commerçant (email + mot de passe)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface MerchantSignUp {
@@ -184,7 +184,7 @@ export async function signInMerchant(email: string, password: string): Promise<{
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Actions — Client (OTP par email : prénom + email + code à 6 chiffres)
+// Actions :Client (OTP par email : prénom + email + code à 6 chiffres)
 // ─────────────────────────────────────────────────────────────────────────────
 //
 // PRÉ-REQUIS Supabase : l'envoi d'email doit être configuré (SMTP custom OU
