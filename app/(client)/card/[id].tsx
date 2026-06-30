@@ -63,12 +63,35 @@ export default function CardDetailScreen() {
             stampsTotal={view.stampsTotal}
             rewardLabel={view.rewardLabel}
             totalVisits={view.totalVisits}
+            address={view.address}
+            color={view.color}
             isDemo={view.isDemo}
           />
 
+          {/* À propos du commerce (infos personnalisées par le commerçant) */}
+          {view.description || view.address || view.businessType ? (
+            <View style={styles.infoCard}>
+              <Text style={styles.infoTitle}>À propos</Text>
+              {view.description ? <Text style={styles.infoText}>{view.description}</Text> : null}
+              {view.address ? (
+                <View style={styles.infoRow}>
+                  <Ionicons name="location-outline" size={16} color={theme.colors.textSecondary} />
+                  <Text style={styles.infoRowText}>{view.address}</Text>
+                </View>
+              ) : null}
+              {view.businessType ? (
+                <View style={styles.infoRow}>
+                  <Ionicons name="pricetag-outline" size={16} color={theme.colors.textSecondary} />
+                  <Text style={styles.infoRowText}>{view.businessType}</Text>
+                </View>
+              ) : null}
+              <Text style={styles.infoCreator}>Proposé par {view.merchantName}</Text>
+            </View>
+          ) : null}
+
           {/* Animation de remplissage des tampons (rejoue la progression). */}
           {view.stampsTotal > 0 ? (
-            <View style={styles.animCard}>
+            <View style={[styles.animCard, { backgroundColor: view.color ?? theme.colors.primary }]}>
               <Text style={styles.sectionLabel}>TES PASSAGES</Text>
               <StampAnimation
                 total={view.stampsTotal}
@@ -117,6 +140,19 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   topTitle: { flex: 1, textAlign: 'center', fontFamily: theme.fonts.titleBold, fontSize: theme.fontSize.lg, color: theme.colors.text },
   content: { padding: theme.spacing.md, gap: theme.spacing.lg },
+  infoCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  infoTitle: { fontFamily: theme.fonts.titleBold, fontSize: theme.fontSize.md, color: theme.colors.text },
+  infoText: { fontSize: theme.fontSize.md, color: theme.colors.textSecondary, lineHeight: 21 },
+  infoRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+  infoRowText: { flex: 1, fontSize: theme.fontSize.md, color: theme.colors.text },
+  infoCreator: { fontSize: theme.fontSize.sm, color: theme.colors.textSecondary, fontStyle: 'italic', marginTop: theme.spacing.xs },
   animCard: {
     backgroundColor: theme.colors.primary,
     borderRadius: theme.radius.lg,

@@ -19,6 +19,10 @@ export interface CardViewModel {
   rewardLabel: string;
   /** Total de passages cumulés (affiché quand aucune récompense n'est configurée). */
   totalVisits: number;
+  /** Personnalisation par le commerçant. */
+  color?: string;
+  address?: string;
+  description?: string;
   isDemo: boolean;
 }
 
@@ -33,6 +37,9 @@ export function realCardToView(card: LoyaltyCardWithDetails): CardViewModel {
     stampsTotal: total,
     rewardLabel: card.next_reward?.label ?? '',
     totalVisits: card.total_visits,
+    color: card.card_color ?? undefined,
+    address: card.address ?? undefined,
+    description: card.description ?? undefined,
     isDemo: false,
   };
 }
@@ -47,6 +54,9 @@ export function demoCardToView(card: DemoCard): CardViewModel {
     stampsTotal: card.stampsTotal,
     rewardLabel: card.reward_label,
     totalVisits: card.stampsFilled,
+    color: card.color,
+    address: card.address,
+    description: card.description,
     isDemo: true,
   };
 }

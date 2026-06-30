@@ -1,4 +1,4 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { brand } from '@/constants/brand';
 import { theme } from '@/constants/theme';
@@ -6,20 +6,29 @@ import { theme } from '@/constants/theme';
 interface BrandHeaderProps {
   /** Prénom de l'utilisateur (pour l'initiale de l'avatar). */
   firstName?: string | null;
+  /** Action au tap sur l'avatar (ex : ouvrir le profil / les réglages). */
+  onAvatarPress?: () => void;
 }
 
 const LOGO_H = 30;
 
-/** En-tête de marque : logo Fidéli à gauche, avatar avec initiale à droite. */
-export function BrandHeader({ firstName }: BrandHeaderProps) {
+/** En-tête de marque : logo Fidéli à gauche, avatar avec initiale à droite (cliquable). */
+export function BrandHeader({ firstName, onAvatarPress }: BrandHeaderProps) {
   const initial = (firstName?.trim()?.[0] ?? '?').toUpperCase();
 
   return (
     <View style={styles.row}>
       <Image source={brand.logoHome} style={styles.logo} resizeMode="contain" />
-      <View style={styles.avatar}>
+      <Pressable
+        onPress={onAvatarPress}
+        disabled={!onAvatarPress}
+        hitSlop={8}
+        style={styles.avatar}
+        accessibilityRole="button"
+        accessibilityLabel="Mon profil"
+      >
         <Text style={styles.initial}>{initial}</Text>
-      </View>
+      </Pressable>
     </View>
   );
 }

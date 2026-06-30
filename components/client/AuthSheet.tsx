@@ -25,6 +25,7 @@ import { useGuestStore } from '@/stores/guestStore';
 export function AuthSheet() {
   const visible = useGuestStore((s) => s.authSheetVisible);
   const reason = useGuestStore((s) => s.authReason);
+  const mode = useGuestStore((s) => s.authMode);
   const close = useGuestStore((s) => s.closeAuthSheet);
   const router = useRouter();
 
@@ -37,14 +38,16 @@ export function AuthSheet() {
           <View style={styles.sheet}>
             <View style={styles.handle} />
             <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
-              <Text style={styles.title}>Crée ton compte</Text>
+              <Text style={styles.title}>{mode === 'login' ? 'Bon retour' : 'Crée ton compte'}</Text>
               <Text style={styles.subtitle}>
-                {reason
-                  ? `Pour ${reason}, crée ton compte en quelques secondes.`
-                  : 'Crée ton compte pour enregistrer tes vraies cartes de fidélité.'}
+                {mode === 'login'
+                  ? 'Connecte-toi avec ton email pour retrouver tes cartes.'
+                  : reason
+                    ? `Pour ${reason}, crée ton compte en quelques secondes.`
+                    : 'Crée ton compte pour enregistrer tes vraies cartes de fidélité.'}
               </Text>
 
-              <ClientAuthForm onSuccess={close} />
+              <ClientAuthForm key={mode} initialMode={mode} onSuccess={close} />
 
               <Pressable
                 onPress={() => {

@@ -4,9 +4,12 @@
 import {
   canSeeDetailedStats,
   canSendPush,
+  getEffectivePlan,
   hasReachedClientLimit,
+  isInTrial,
   nextPlan,
   PLANS,
+  trialDaysLeft,
 } from '@/constants/plans';
 
 describe('MUR 1 — limite de clients', () => {
@@ -53,7 +56,39 @@ describe('nextPlan', () => {
 describe('PLANS — cohérence des prix', () => {
   it('respecte la grille tarifaire', () => {
     expect(PLANS.starter.price_eur).toBe(0);
-    expect(PLANS.pro.price_eur).toBe(29);
+    expect(PLANS.pro.price_eur).toBe(29.99);
     expect(PLANS.premium.price_eur).toBe(69);
+  });
+});
+
+describe('Essai Pro — plan effectif', () => {
+  const future = new Date(Date.now() + 30 * 86_400_000).toISOString();
+  const past = new Date(Date.now() - 1 * 86_400_000).toISOString();
+
+  it('considère un Starter en essai comme Pro', () => {
+    const m = { plan: 'starter' as const, trial_ends_at: future, stripe_subscription_id: null };
+    expect(isInTrial(m)).toBe(true);
+    expect(getEffectivePlan(m)).toBe('pro');
+    expect(canSeeDetailedStats(getEffectivePlan(m))).toBe(true);
+    expect(canSendPush(getEffectivePlan(m))).toBe(true);
+  });
+
+  it('repasse en Starter une fois l’essai terminé', () => {
+    const m = { plan: 'starter' as const, trial_ends_at: past, stripe_subscription_id: null };
+    expect(isInTrial(m)).toBe(false);
+    expect(getEffectivePlan(m)).toBe('starter');
+    expect(trialDaysLeft(m)).toBe(0);
+  });
+
+  it('garde le plan payant et ne compte pas comme essai', () => {
+    const m = { plan: 'pro' as const, trial_ends_at: future, stripe_subscription_id: 'sub_123' };
+    expect(isInTrial(m)).toBe(false);
+    expect(getEffectivePlan(m)).toBe('pro');
+  });
+
+  it('calcule les jours restants', () => {
+    const m = { plan: 'starter' as const, trial_ends_at: future, stripe_subscription_id: null };
+    expect(trialDaysLeft(m)).toBeGreaterThan(0);
+    expect(trialDaysLeft(m)).toBeLessThanOrEqual(30);
   });
 });

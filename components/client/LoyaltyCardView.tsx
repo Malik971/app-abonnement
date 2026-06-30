@@ -4,6 +4,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { brand } from '@/constants/brand';
 import { theme } from '@/constants/theme';
+import { cardGradient } from '@/lib/color';
 
 export interface LoyaltyCardViewProps {
   merchantName: string;
@@ -15,9 +16,12 @@ export interface LoyaltyCardViewProps {
   rewardLabel: string;
   /** Passages cumulés (affiché si aucune récompense configurée). */
   totalVisits?: number;
+  /** Adresse du commerce (affichée sous le nom). */
+  address?: string;
   /** Carte de démonstration → badge « Démo ». */
   isDemo?: boolean;
-  color?: string; // réservé pour une couleur personnalisable par commerce (plus tard)
+  /** Couleur de marque personnalisée par le commerçant (hex). */
+  color?: string;
 }
 
 const MAX_STAMPS = 20; // 2 lignes de 10 max
@@ -35,7 +39,9 @@ export function LoyaltyCardView({
   stampsTotal,
   rewardLabel,
   totalVisits = 0,
+  address,
   isDemo = false,
+  color,
 }: LoyaltyCardViewProps) {
   const hasReward = stampsTotal > 0 && rewardLabel.length > 0;
   const total = hasReward ? stampsTotal : 0;
@@ -43,14 +49,14 @@ export function LoyaltyCardView({
   const remaining = hasReward ? total - filled : 0;
   const useGrid = hasReward && total <= MAX_STAMPS;
 
+  const baseColor = color ?? theme.colors.primary;
+  const gradientColors = color
+    ? cardGradient(color)
+    : ([theme.colors.gradientStart, theme.colors.primary] as const);
+
   return (
-    <View style={styles.shadow}>
-      <LinearGradient
-        colors={[theme.colors.gradientStart, theme.colors.primary]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.card}
-      >
+    <View style={[styles.shadow, { shadowColor: baseColor, backgroundColor: baseColor }]}>
+      <LinearGradient colors={gradientColors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.card}>
         {/* Ailes en filigrane, en haut à droite */}
         <Image source={brand.wingsA} style={styles.wings} resizeMode="contain" />
 
@@ -72,6 +78,15 @@ export function LoyaltyCardView({
             </Text>
           ) : null}
         </View>
+
+        {address ? (
+          <View style={styles.addressRow}>
+            <Ionicons name="location-outline" size={12} color="rgba(255,255,255,0.85)" />
+            <Text style={styles.address} numberOfLines={1}>
+              {address}
+            </Text>
+          </View>
+        ) : null}
 
         {/* Centre : grille de pastilles OU progression chiffrée */}
         {!hasReward ? (
@@ -179,6 +194,8 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: theme.spacing.sm },
   business: { flex: 1, fontFamily: theme.fonts.titleBold, color: theme.colors.cardText, fontSize: theme.fontSize.xl },
   type: { fontFamily: theme.fonts.mono, color: theme.colors.cardText, opacity: 0.8, fontSize: theme.fontSize.sm },
+  addressRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  address: { flex: 1, fontFamily: theme.fonts.mono, color: 'rgba(255,255,255,0.85)', fontSize: theme.fontSize.xs },
   center: { alignItems: 'center', paddingVertical: theme.spacing.lg },
   bigNumber: { fontFamily: theme.fonts.titleBold, color: theme.colors.cardText, fontSize: theme.fontSize.display },
   bigLabel: { fontFamily: theme.fonts.mono, color: theme.colors.cardText, opacity: 0.85, fontSize: theme.fontSize.md },

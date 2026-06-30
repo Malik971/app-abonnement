@@ -73,15 +73,18 @@ function RootContent({ fontsLoaded }: { fontsLoaded: boolean }) {
     const inClient = group === '(client)';
 
     // 1. Connecté → routage strict par rôle (jamais d'interface mélangée).
+    //    Exception : on autorise un utilisateur connecté à revoir l'onboarding.
     if (session) {
+      if (inOnboarding) return;
       if (role === 'merchant' && !inMerchant) router.replace(ROUTES.merchantDashboard);
       else if (role !== 'merchant' && !inClient) router.replace(ROUTES.clientHome);
       return;
     }
 
     // 2. Non connecté, jamais vu l'onboarding → onboarding.
+    //    On laisse passer l'espace auth (lien « Je suis commerçant » depuis l'onboarding).
     if (!onboardingSeen) {
-      if (!inOnboarding) router.replace(ROUTES.onboarding);
+      if (!inOnboarding && !inAuth) router.replace(ROUTES.onboarding);
       return;
     }
 

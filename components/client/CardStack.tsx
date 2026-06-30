@@ -35,6 +35,8 @@ export function CardStack({ cards, onPressCard }: CardStackProps) {
             stampsTotal={c.stampsTotal}
             rewardLabel={c.rewardLabel}
             totalVisits={c.totalVisits}
+            address={c.address}
+            color={c.color}
             isDemo={c.isDemo}
           />
         </Pressable>

@@ -22,7 +22,7 @@ export const PLANS = {
   pro: {
     id: 'pro',
     label: 'Pro',
-    price_eur: 29,
+    price_eur: 29.99,
     stripe_price_id: process.env.EXPO_PUBLIC_STRIPE_PRICE_PRO ?? '',
     max_clients: null, // Illimité
     push_notifications: true,
@@ -79,4 +79,43 @@ export function nextPlan(plan: PlanId): PlanId | null {
   if (plan === 'starter') return 'pro';
   if (plan === 'pro') return 'premium';
   return null;
+}
+
+// ── Essai Pro gratuit (migration 008) ─────────────────────────────────────────
+
+/** Durée de l'essai Pro offert à l'inscription commerçant. */
+export const TRIAL_DAYS = 60;
+
+/** Forme minimale d'un commerçant pour le calcul du plan / de l'essai. */
+export interface PlanContext {
+  plan: PlanId;
+  trial_ends_at: string | null;
+  stripe_subscription_id: string | null;
+}
+
+/** True si le commerçant est en période d'essai Pro (et pas encore payant). */
+export function isInTrial(m: PlanContext): boolean {
+  if (m.stripe_subscription_id) return false;
+  if (m.plan !== 'starter') return false;
+  if (!m.trial_ends_at) return false;
+  return new Date(m.trial_ends_at).getTime() > Date.now();
+}
+
+/** Nombre de jours restants avant la fin de l'essai (0 si terminé). */
+export function trialDaysLeft(m: PlanContext): number {
+  if (!m.trial_ends_at) return 0;
+  const ms = new Date(m.trial_ends_at).getTime() - Date.now();
+  return Math.max(0, Math.ceil(ms / 86_400_000));
+}
+
+/**
+ * Plan « effectif » utilisé pour débloquer les fonctionnalités :
+ *   - plan payant (pro/premium) si abonnement actif,
+ *   - sinon Pro pendant l'essai,
+ *   - sinon Starter.
+ */
+export function getEffectivePlan(m: PlanContext): PlanId {
+  if (m.plan !== 'starter') return m.plan;
+  if (isInTrial(m)) return 'pro';
+  return 'starter';
 }

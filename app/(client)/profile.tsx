@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -63,10 +64,25 @@ function GuestProfile() {
         </View>
 
         <Button label="Créer mon compte" onPress={() => requireAuth('gérer ton profil')} />
+        <Button label="J'ai déjà un compte — Se connecter" variant="ghost" onPress={() => requireAuth(undefined, 'login')} />
+
+        {/* Légal et aide */}
+        <SectionTitle>Légal et aide</SectionTitle>
+        <Card style={styles.section}>
+          <TutorialRow />
+          <Divider />
+          <LinkRow icon="shield-checkmark-outline" label="Confidentialité et sécurité" onPress={() => router.push(ROUTES.privacy)} />
+          <Divider />
+          <LinkRow icon="document-text-outline" label="Conditions d'utilisation" onPress={() => router.push(ROUTES.terms)} />
+          <Divider />
+          <LinkRow icon="help-circle-outline" label="Aide" onPress={() => router.push(ROUTES.help)} />
+        </Card>
 
         <Pressable onPress={() => router.push(ROUTES.merchantLogin)} hitSlop={8} style={styles.merchantLink}>
           <Text style={styles.merchantText}>Je suis commerçant</Text>
         </Pressable>
+
+        <DevReset />
       </ScrollView>
     </SafeAreaView>
   );
@@ -185,6 +201,8 @@ function ConnectedProfile() {
         {/* Légal et aide */}
         <SectionTitle>Légal et aide</SectionTitle>
         <Card style={styles.section}>
+          <TutorialRow />
+          <Divider />
           <LinkRow icon="shield-checkmark-outline" label="Confidentialité et sécurité" onPress={() => router.push(ROUTES.privacy)} />
           <Divider />
           <LinkRow icon="document-text-outline" label="Conditions d'utilisation" onPress={() => router.push(ROUTES.terms)} />
@@ -207,6 +225,8 @@ function ConnectedProfile() {
         <Text style={styles.legal}>
           Vos données sont hébergées en Europe. Vous pouvez les supprimer à tout moment.
         </Text>
+
+        <DevReset />
       </ScrollView>
 
       {/* Modal : modifier le prénom */}
@@ -260,6 +280,43 @@ function ConnectedProfile() {
 
 function SectionTitle({ children }: { children: string }) {
   return <Text style={styles.sectionTitle}>{children}</Text>;
+}
+
+/** Ligne « Revoir le tutoriel » : réinitialise l'onboarding puis y renvoie. */
+function TutorialRow() {
+  const router = useRouter();
+  const resetOnboarding = useGuestStore((s) => s.resetOnboarding);
+
+  async function review() {
+    await resetOnboarding();
+    router.replace(ROUTES.onboarding);
+  }
+
+  return <LinkRow icon="play-circle-outline" label="Revoir le tutoriel" onPress={review} />;
+}
+
+/** Bouton de remise à zéro complète — visible uniquement en développement. */
+function DevReset() {
+  const router = useRouter();
+  const resetOnboarding = useGuestStore((s) => s.resetOnboarding);
+  const leaveGuest = useGuestStore((s) => s.leaveGuest);
+
+  if (!__DEV__) return null;
+
+  async function reset() {
+    // Efface l'onboarding + le mode invité (mémoire ET AsyncStorage) et déconnecte.
+    await resetOnboarding();
+    await leaveGuest();
+    await AsyncStorage.multiRemove(['fideli_onboarding_seen', 'fideli_guest_mode']);
+    await signOutUser();
+    router.replace(ROUTES.onboarding);
+  }
+
+  return (
+    <Pressable onPress={reset} hitSlop={8} style={styles.devReset} accessibilityRole="button">
+      <Text style={styles.devText}>DEV: Reset complet</Text>
+    </Pressable>
+  );
 }
 
 function Divider() {
@@ -329,6 +386,8 @@ const styles = StyleSheet.create({
   logoutBtn: { paddingVertical: theme.spacing.sm },
   logoutText: { color: theme.colors.primary, fontFamily: theme.fonts.titleBold, fontSize: theme.fontSize.md },
   legal: { fontSize: theme.fontSize.sm, color: theme.colors.textSecondary, marginTop: theme.spacing.md, textAlign: 'center' },
+  devReset: { alignSelf: 'center', paddingVertical: theme.spacing.sm, marginTop: theme.spacing.lg },
+  devText: { color: theme.colors.locked, fontFamily: theme.fonts.mono, fontSize: theme.fontSize.xs, letterSpacing: 1 },
 
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', padding: theme.spacing.lg },
   modalCard: { backgroundColor: theme.colors.surface, borderRadius: theme.radius.lg, padding: theme.spacing.xl, gap: theme.spacing.md, width: '100%' },

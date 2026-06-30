@@ -1,22 +1,27 @@
 import NetInfo from '@react-native-community/netinfo';
 import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LoyaltyCardView } from '@/components/client/LoyaltyCardView';
 import { MerchantQrCard } from '@/components/merchant/MerchantQrCard';
 import { UpgradeCard } from '@/components/merchant/UpgradeCard';
 import { BrandHeader } from '@/components/ui/BrandHeader';
 import { Banner } from '@/components/ui/Banner';
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { LockedOverlay } from '@/components/ui/LockedOverlay';
-import { canSeeDetailedStats, nextPlan } from '@/constants/plans';
+import { PLANS, canSeeDetailedStats, getEffectivePlan, isInTrial, nextPlan, trialDaysLeft } from '@/constants/plans';
 import { theme } from '@/constants/theme';
 import { fetchMerchantDashboard } from '@/lib/queries';
+import { ROUTES } from '@/lib/routes';
 import { startCheckout } from '@/lib/stripe';
 import { useMerchantStore } from '@/stores/merchantStore';
 
 export default function DashboardScreen() {
+  const router = useRouter();
   const merchant = useMerchantStore((s) => s.merchant);
   const program = useMerchantStore((s) => s.program);
   const setStats = useMerchantStore((s) => s.setStats);
@@ -29,8 +34,11 @@ export default function DashboardScreen() {
     return unsub;
   }, []);
 
-  const plan = merchant?.plan ?? 'starter';
+  // Plan « effectif » : l'essai Pro de 2 mois débloque toutes les fonctions Pro.
+  const plan = merchant ? getEffectivePlan(merchant) : 'starter';
   const detailed = canSeeDetailedStats(plan);
+  const onTrial = merchant ? isInTrial(merchant) : false;
+  const daysLeft = merchant ? trialDaysLeft(merchant) : 0;
 
   const { data, isLoading, refetch, isRefetching, dataUpdatedAt } = useQuery({
     queryKey: ['dashboard', merchant?.id, plan],
@@ -55,18 +63,61 @@ export default function DashboardScreen() {
     }
   }
 
+  // Active l'abonnement Pro (depuis l'essai) sans attendre la fin de la période.
+  async function subscribePro() {
+    if (!merchant) return;
+    const res = await startCheckout(merchant.id, 'pro');
+    if (!res.ok) {
+      Alert.alert('Abonnement', res.error ?? 'Impossible de démarrer le paiement.');
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <BrandHeader firstName={merchant?.business_name} />
+      <BrandHeader firstName={merchant?.business_name} onAvatarPress={() => router.push(ROUTES.merchantSettings)} />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
       >
         <Text style={styles.business}>{merchant?.business_name ?? 'Mon commerce'}</Text>
-        <Text style={styles.planTag}>Plan {plan}</Text>
+        <Text style={styles.planTag}>{onTrial ? `Essai Pro · ${daysLeft} j restants` : `Plan ${plan}`}</Text>
+
+        {/* Essai Pro : mise en avant de l'abonnement (cœur de la monétisation). */}
+        {onTrial ? (
+          <View style={styles.trialCard}>
+            <Text style={styles.trialTitle}>Essai Pro gratuit — {daysLeft} jour{daysLeft > 1 ? 's' : ''} restant{daysLeft > 1 ? 's' : ''}</Text>
+            <Text style={styles.trialText}>
+              Tu profites de toutes les fonctionnalités Pro. À la fin de l'essai, le forfait Pro
+              ({PLANS.pro.price_eur}€/mois) démarre — sauf si tu annules avant. On te préviendra 7 jours
+              puis 1 jour avant.
+            </Text>
+            <Button label={`Activer Pro maintenant — ${PLANS.pro.price_eur}€/mois`} variant="secondary" onPress={subscribePro} />
+          </View>
+        ) : null}
 
         {program ? (
           <MerchantQrCard token={program.qr_code_token} businessName={merchant?.business_name ?? 'Mon commerce'} />
+        ) : null}
+
+        {/* Ma carte : aperçu + personnalisation, accessible depuis le tableau de bord. */}
+        {merchant ? (
+          <View style={styles.cardSection}>
+            <Text style={styles.sectionTitle}>Ma carte de fidélité</Text>
+            <LoyaltyCardView
+              merchantName={merchant.business_name}
+              businessType={merchant.business_type ?? undefined}
+              stampsFilled={3}
+              stampsTotal={Math.max(1, program?.rewards?.[0]?.points_required ?? 8)}
+              rewardLabel={program?.rewards?.[0]?.label ?? 'Ta récompense'}
+              address={merchant.address ?? undefined}
+              color={merchant.card_color ?? undefined}
+            />
+            <Button
+              label="Personnaliser ma carte"
+              variant="secondary"
+              onPress={() => router.push(ROUTES.merchantSettings)}
+            />
+          </View>
         ) : null}
 
         {!online && dataUpdatedAt ? (
@@ -157,6 +208,15 @@ const styles = StyleSheet.create({
   content: { padding: theme.spacing.md, gap: theme.spacing.md },
   business: { fontFamily: theme.fonts.titleBold, fontSize: theme.fontSize.xxl, color: theme.colors.text },
   planTag: { fontFamily: theme.fonts.mono, fontSize: theme.fontSize.sm, color: theme.colors.textSecondary, textTransform: 'uppercase', letterSpacing: 1, marginTop: 2 },
+  trialCard: {
+    backgroundColor: theme.colors.primaryLight,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  trialTitle: { fontFamily: theme.fonts.titleBold, fontSize: theme.fontSize.lg, color: theme.colors.text },
+  trialText: { fontSize: theme.fontSize.sm, color: theme.colors.textSecondary, lineHeight: 20 },
+  cardSection: { gap: theme.spacing.sm },
   loader: { marginTop: theme.spacing.xxl },
   statsRow: { flexDirection: 'row', gap: theme.spacing.md },
   statCard: { flex: 1, alignItems: 'center', paddingVertical: theme.spacing.lg },

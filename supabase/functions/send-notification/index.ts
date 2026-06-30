@@ -56,14 +56,23 @@ Deno.serve(async (req) => {
   // Vérifie que le commerçant existe, appartient à l'appelant, et a le bon plan.
   const { data: merchant } = await admin
     .from('merchants')
-    .select('id, user_id, plan')
+    .select('id, user_id, plan, trial_ends_at, stripe_subscription_id')
     .eq('id', body.merchantId)
     .single();
 
   if (!merchant || merchant.user_id !== userId) {
     return json({ error: 'Commerce introuvable' }, 403);
   }
-  if (merchant.plan === 'starter') {
+
+  // Plan « effectif » : l'essai Pro (60 jours) débloque l'envoi, comme côté app.
+  const inTrial =
+    !merchant.stripe_subscription_id &&
+    merchant.plan === 'starter' &&
+    merchant.trial_ends_at != null &&
+    new Date(merchant.trial_ends_at as string).getTime() > Date.now();
+  const effectivePlan = merchant.plan !== 'starter' ? merchant.plan : inTrial ? 'pro' : 'starter';
+
+  if (effectivePlan === 'starter') {
     return json({ error: 'Les notifications nécessitent le plan Pro.' }, 402);
   }
 

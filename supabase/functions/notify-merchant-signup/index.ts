@@ -48,8 +48,10 @@ Deno.serve(async (req) => {
     <p><strong>Type :</strong> ${escapeHtml((merchant.business_type as string) ?? '—')}</p>
     <p><strong>Email :</strong> ${escapeHtml(user.email ?? '—')}</p>
     <p><strong>Date :</strong> ${escapeHtml(createdAt)}</p>
-    <p>Pour valider, change <code>approval_status</code> en <code>approved</code> :</p>
+    <p><strong>merchant_id :</strong> <code>${escapeHtml(merchant.id as string)}</code></p>
+    <p>Option 1 — Table Editor : change <code>approval_status</code> en <code>approved</code> :</p>
     <p><a href="${SUPABASE_PROJECT_EDITOR}">${SUPABASE_PROJECT_EDITOR}</a></p>
+    <p>Option 2 — Fonction (sans dashboard) : appelle <code>approve-merchant</code> avec ce merchant_id et ta clé service role.</p>
   `;
 
   const sent = await sendEmail({ to: adminEmail, subject: `Fidéli — nouveau commerce : ${merchant.business_name}`, html });

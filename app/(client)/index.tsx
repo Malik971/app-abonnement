@@ -49,7 +49,7 @@ export default function ClientHomeScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <BrandHeader firstName={client?.first_name} />
+      <BrandHeader firstName={client?.first_name} onAvatarPress={() => router.push(ROUTES.profile)} />
       <View style={styles.header}>
         <View style={styles.headerText}>
           <Text style={styles.greeting}>
@@ -97,6 +97,9 @@ export default function ClientHomeScreen() {
                 variant="secondary"
                 onPress={() => requireAuth('enregistrer tes cartes')}
               />
+              <Pressable onPress={() => requireAuth(undefined, 'login')} hitSlop={6} style={styles.guestLogin}>
+                <Text style={styles.guestLoginText}>J'ai déjà un compte — Se connecter</Text>
+              </Pressable>
             </View>
           ) : null}
 
@@ -151,4 +154,6 @@ const styles = StyleSheet.create({
   },
   guestTitle: { fontFamily: theme.fonts.titleBold, fontSize: theme.fontSize.lg, color: theme.colors.text },
   guestText: { fontSize: theme.fontSize.sm, color: theme.colors.textSecondary, lineHeight: 19 },
+  guestLogin: { alignSelf: 'center', paddingVertical: theme.spacing.xs },
+  guestLoginText: { color: theme.colors.primary, fontFamily: theme.fonts.title, fontSize: theme.fontSize.sm },
 });

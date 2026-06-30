@@ -14,6 +14,12 @@ export interface DemoCard {
   business_name: string;
   business_type: string;
   city: string;
+  /** Adresse affichée sur la carte / le détail. */
+  address: string;
+  /** Courte description du commerce. */
+  description: string;
+  /** Couleur de marque de la carte (hex). */
+  color: string;
   /** Nombre de passages pour obtenir la récompense. */
   stampsTotal: number;
   /** Passages déjà obtenus (progression de démo). */
@@ -28,6 +34,9 @@ export const DEMO_CARDS: DemoCard[] = [
     business_name: 'Snack Ti Punch',
     business_type: 'Snack',
     city: 'Pointe-à-Pitre',
+    address: '12 rue Frébault, Pointe-à-Pitre',
+    description: 'Bokit, agoulou et jus frais le midi.',
+    color: '#E76F51',
     stampsTotal: 8,
     stampsFilled: 5,
     reward_label: '1 menu offert',
@@ -38,6 +47,9 @@ export const DEMO_CARDS: DemoCard[] = [
     business_name: 'Barber King 971',
     business_type: 'Barbier',
     city: 'Les Abymes',
+    address: 'Centre commercial Milénis, Les Abymes',
+    description: 'Coupe, dégradé et taille de barbe.',
+    color: '#1D2230',
     stampsTotal: 10,
     stampsFilled: 7,
     reward_label: '1 coupe offerte',
@@ -48,6 +60,9 @@ export const DEMO_CARDS: DemoCard[] = [
     business_name: 'Lé Bon Lambi',
     business_type: 'Restaurant créole',
     city: 'Le Gosier',
+    address: 'Bord de mer, Le Gosier',
+    description: 'Cuisine créole maison, midi en semaine.',
+    color: '#0D9488',
     stampsTotal: 10,
     stampsFilled: 3,
     reward_label: '1 plat offert',
@@ -58,6 +73,9 @@ export const DEMO_CARDS: DemoCard[] = [
     business_name: 'Jus Péyi',
     business_type: 'Bar à jus',
     city: 'Baie-Mahault',
+    address: 'Zone Jarry, Baie-Mahault',
+    description: 'Jus de fruits péyi pressés minute.',
+    color: '#F2A900',
     stampsTotal: 6,
     stampsFilled: 4,
     reward_label: '1 jus offert',
@@ -68,6 +86,9 @@ export const DEMO_CARDS: DemoCard[] = [
     business_name: "Coiff'Karukera",
     business_type: 'Salon de coiffure',
     city: 'Le Gosier',
+    address: 'Résidence Karukera, Le Gosier',
+    description: 'Coiffure femme & homme, brushing.',
+    color: '#7C3AED',
     stampsTotal: 8,
     stampsFilled: 2,
     reward_label: '1 brushing offert',

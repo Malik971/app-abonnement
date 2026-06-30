@@ -6,7 +6,7 @@ import { UpgradeCard } from '@/components/merchant/UpgradeCard';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Screen } from '@/components/ui/Screen';
-import { canSendPush } from '@/constants/plans';
+import { canSendPush, getEffectivePlan } from '@/constants/plans';
 import { theme } from '@/constants/theme';
 import { fetchMerchantClients } from '@/lib/queries';
 import { supabase } from '@/lib/supabase';
@@ -16,7 +16,8 @@ const MAX_CHARS = 200;
 
 export default function NotificationsScreen() {
   const merchant = useMerchantStore((s) => s.merchant);
-  const plan = merchant?.plan ?? 'starter';
+  // Plan « effectif » : l'essai Pro débloque l'envoi de notifications.
+  const plan = merchant ? getEffectivePlan(merchant) : 'starter';
   const unlocked = canSendPush(plan);
 
   const [message, setMessage] = useState('');

@@ -18,6 +18,7 @@ export const ROUTES = {
   rewards: '/(client)/rewards' as Href,
   profile: '/(client)/profile' as Href,
   merchantDashboard: '/(merchant)/dashboard' as Href,
+  merchantSettings: '/(merchant)/settings' as Href,
   merchantLogin: '/(auth)/merchant-login' as Href,
   clientSignup: '/(auth)/client-signup' as Href,
   card: (id: string): Href => `/(client)/card/${id}` as Href,

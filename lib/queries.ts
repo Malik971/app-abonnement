@@ -44,7 +44,9 @@ export async function fetchClientByUser(userId: string): Promise<Client | null> 
 export async function fetchClientCards(clientId: string): Promise<LoyaltyCardWithDetails[]> {
   const { data, error } = await supabase
     .from('loyalty_cards')
-    .select('*, loyalty_programs(rewards), merchants(business_name, business_type)')
+    .select(
+      '*, loyalty_programs(rewards), merchants(business_name, business_type, card_color, address, description)',
+    )
     .eq('client_id', clientId)
     .order('last_visit_at', { ascending: false, nullsFirst: false });
 
@@ -64,6 +66,9 @@ export async function fetchClientCards(clientId: string): Promise<LoyaltyCardWit
       created_at: row.created_at,
       business_name: row.merchants?.business_name ?? 'Commerce',
       business_type: row.merchants?.business_type ?? null,
+      card_color: row.merchants?.card_color ?? null,
+      address: row.merchants?.address ?? null,
+      description: row.merchants?.description ?? null,
       rewards,
       next_reward,
       points_to_next,
@@ -81,7 +86,13 @@ interface RawCard {
   last_visit_at: string | null;
   created_at: string;
   loyalty_programs: { rewards: Reward[] } | null;
-  merchants: { business_name: string; business_type: string | null } | null;
+  merchants: {
+    business_name: string;
+    business_type: string | null;
+    card_color: string | null;
+    address: string | null;
+    description: string | null;
+  } | null;
 }
 
 /**

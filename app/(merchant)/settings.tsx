@@ -3,14 +3,16 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
+import { LoyaltyCardView } from '@/components/client/LoyaltyCardView';
 import { UpgradeCard } from '@/components/merchant/UpgradeCard';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Screen } from '@/components/ui/Screen';
-import { PLANS } from '@/constants/plans';
+import { PLANS, isInTrial, trialDaysLeft } from '@/constants/plans';
 import { theme } from '@/constants/theme';
 import { signOutUser } from '@/hooks/useAuth';
+import { CARD_COLORS } from '@/lib/color';
 import { openBillingPortal } from '@/lib/stripe';
 import { supabase } from '@/lib/supabase';
 import { useMerchantStore } from '@/stores/merchantStore';
@@ -28,12 +30,18 @@ export default function SettingsScreen() {
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [newPoints, setNewPoints] = useState('');
   const [newLabel, setNewLabel] = useState('');
+  const [cardColor, setCardColor] = useState<string>(CARD_COLORS[0]);
+  const [address, setAddress] = useState('');
+  const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (merchant) {
       setBusinessName(merchant.business_name);
       setBusinessType(merchant.business_type ?? '');
+      setCardColor(merchant.card_color ?? CARD_COLORS[0]);
+      setAddress(merchant.address ?? '');
+      setDescription(merchant.description ?? '');
     }
   }, [merchant]);
 
@@ -62,7 +70,13 @@ export default function SettingsScreen() {
 
     await supabase
       .from('merchants')
-      .update({ business_name: businessName.trim(), business_type: businessType.trim() || null })
+      .update({
+        business_name: businessName.trim(),
+        business_type: businessType.trim() || null,
+        card_color: cardColor,
+        address: address.trim() || null,
+        description: description.trim() || null,
+      })
       .eq('id', merchant.id);
 
     const ppv = Math.max(1, parseInt(pointsPerVisit, 10) || 1);
@@ -138,6 +152,44 @@ export default function SettingsScreen() {
         <Button label="Ajouter la récompense" variant="secondary" onPress={addReward} />
       </Section>
 
+      {/* Apparence de la carte (vue côté client) */}
+      <Section title="Apparence de la carte">
+        <View style={styles.previewWrap}>
+          <LoyaltyCardView
+            merchantName={businessName || 'Mon commerce'}
+            businessType={businessType || undefined}
+            stampsFilled={3}
+            stampsTotal={Math.max(1, rewards[0]?.points_required ?? 8)}
+            rewardLabel={rewards[0]?.label ?? 'Ta récompense'}
+            address={address || undefined}
+            color={cardColor}
+          />
+        </View>
+
+        <Text style={styles.label}>Couleur</Text>
+        <View style={styles.swatchRow}>
+          {CARD_COLORS.map((c) => (
+            <Pressable
+              key={c}
+              onPress={() => setCardColor(c)}
+              accessibilityRole="button"
+              accessibilityLabel={`Couleur ${c}`}
+              style={[styles.swatch, { backgroundColor: c }, cardColor === c && styles.swatchSelected]}
+            />
+          ))}
+        </View>
+
+        <Input label="Adresse" value={address} onChangeText={setAddress} placeholder="Ex : 12 rue Frébault, Pointe-à-Pitre" />
+        <Input
+          label="Description"
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Ex : Snack créole, bokit et jus frais le midi."
+          multiline
+          style={styles.descInput}
+        />
+      </Section>
+
       <Button label="Enregistrer" onPress={save} loading={saving} style={styles.saveBtn} />
 
       {/* QR code */}
@@ -159,6 +211,12 @@ export default function SettingsScreen() {
           <Text style={styles.planName}>Plan {planDef.label}</Text>
           <Text style={styles.planPrice}>{planDef.price_eur}€/mois</Text>
         </View>
+        {merchant && isInTrial(merchant) ? (
+          <Text style={styles.muted}>
+            Essai Pro gratuit en cours — {trialDaysLeft(merchant)} jours restants. Sans abonnement,
+            tu repasseras en Starter à la fin de l'essai.
+          </Text>
+        ) : null}
         {renewal ? <Text style={styles.muted}>Renouvellement le {renewal}</Text> : null}
         {merchant && merchant.plan !== 'premium' ? (
           <View style={styles.upgradeWrap}>
@@ -199,6 +257,11 @@ const styles = StyleSheet.create({
   addRow: { flexDirection: 'row', gap: theme.spacing.sm },
   addPoints: { width: 80 },
   addLabel: { flex: 1 },
+  previewWrap: { marginBottom: theme.spacing.sm },
+  swatchRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm, marginBottom: theme.spacing.sm },
+  swatch: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: theme.colors.border },
+  swatchSelected: { borderWidth: 3, borderColor: theme.colors.text },
+  descInput: { height: 88, paddingTop: theme.spacing.sm, textAlignVertical: 'top' },
   saveBtn: { marginBottom: theme.spacing.lg },
   qrWrap: { alignItems: 'center', paddingVertical: theme.spacing.md },
   qrHint: { fontSize: theme.fontSize.sm, color: theme.colors.textSecondary, textAlign: 'center', marginBottom: theme.spacing.sm },

@@ -5,9 +5,10 @@ import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { MerchantPendingScreen } from '@/components/merchant/MerchantPendingScreen';
-import { canSendPush } from '@/constants/plans';
+import { canSendPush, getEffectivePlan } from '@/constants/plans';
 import { theme } from '@/constants/theme';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useTrialReminders } from '@/hooks/useTrialReminders';
 import { fetchMerchantByUser, fetchProgram } from '@/lib/queries';
 import { useAuthStore } from '@/stores/authStore';
 import { useMerchantStore } from '@/stores/merchantStore';
@@ -65,6 +66,11 @@ export default function MerchantLayout() {
     if (merchant?.id) void enablePush(merchant.id);
   }, [merchant?.id, enablePush]);
 
+  // Rappels locaux avant la fin de l'essai Pro (7 jours puis 1 jour).
+  useTrialReminders(merchantData);
+
+  const effectivePlan = merchantData ? getEffectivePlan(merchantData) : 'starter';
+
   // Garde de validation : tant que le commerce n'est pas approuvé, pas d'accès
   // au dashboard. Le statut ne peut être changé que côté serveur (migration 005).
   if (merchantLoading) {
@@ -105,7 +111,7 @@ export default function MerchantLayout() {
         options={{
           title: 'Notifs',
           tabBarIcon: ({ color }) => (
-            <TabIcon name="notifications-outline" color={color} locked={!canSendPush(merchant?.plan ?? 'starter')} />
+            <TabIcon name="notifications-outline" color={color} locked={!canSendPush(effectivePlan)} />
           ),
         }}
       />

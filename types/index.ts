@@ -48,6 +48,12 @@ export type Merchant = {
   approval_status: MerchantApprovalStatus;
   approved_at: string | null;
   rejection_reason: string | null;
+  /** Personnalisation de la carte (migration 007). */
+  card_color: string | null;
+  address: string | null;
+  description: string | null;
+  /** Fin de l'essai Pro gratuit (migration 008). */
+  trial_ends_at: string | null;
   created_at: string;
 }
 
@@ -125,6 +131,10 @@ export type Profile = {
 export interface LoyaltyCardWithDetails extends LoyaltyCard {
   business_name: string;
   business_type: string | null;
+  /** Personnalisation du commerce (migration 007). */
+  card_color: string | null;
+  address: string | null;
+  description: string | null;
   rewards: Reward[];
   /** Prochaine récompense pas encore atteinte, ou null si tout est débloqué. */
   next_reward: Reward | null;

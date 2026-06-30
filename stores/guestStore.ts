@@ -24,14 +24,18 @@ interface GuestState {
   authSheetVisible: boolean;
   /** Raison contextuelle affichée dans la sheet (ex : « enregistrer cette carte »). */
   authReason: string | null;
+  /** Mode d'ouverture : créer un compte ou se connecter. */
+  authMode: 'signup' | 'login';
 
   hydrate: () => Promise<void>;
   markOnboardingSeen: () => Promise<void>;
+  /** Réinitialise l'onboarding (pour le revoir) : efface la clé + l'état mémoire. */
+  resetOnboarding: () => Promise<void>;
   enterGuest: () => Promise<void>;
   /** Quitte le mode invité (appelé après une connexion réussie). */
   leaveGuest: () => Promise<void>;
-  /** Ouvre le mur de compte. `reason` = action que l'invité tentait. */
-  requireAuth: (reason?: string) => void;
+  /** Ouvre le mur de compte. `reason` = action que l'invité tentait, `mode` = onglet par défaut. */
+  requireAuth: (reason?: string, mode?: 'signup' | 'login') => void;
   closeAuthSheet: () => void;
 }
 
@@ -41,6 +45,7 @@ export const useGuestStore = create<GuestState>((set) => ({
   isGuest: false,
   authSheetVisible: false,
   authReason: null,
+  authMode: 'signup',
 
   hydrate: async () => {
     try {
@@ -64,6 +69,15 @@ export const useGuestStore = create<GuestState>((set) => ({
     }
   },
 
+  resetOnboarding: async () => {
+    set({ onboardingSeen: false });
+    try {
+      await AsyncStorage.removeItem(ONBOARDING_KEY);
+    } catch {
+      /* non bloquant */
+    }
+  },
+
   enterGuest: async () => {
     set({ isGuest: true });
     try {
@@ -82,7 +96,8 @@ export const useGuestStore = create<GuestState>((set) => ({
     }
   },
 
-  requireAuth: (reason) => set({ authSheetVisible: true, authReason: reason ?? null }),
+  requireAuth: (reason, mode = 'signup') =>
+    set({ authSheetVisible: true, authReason: reason ?? null, authMode: mode }),
 
-  closeAuthSheet: () => set({ authSheetVisible: false, authReason: null }),
+  closeAuthSheet: () => set({ authSheetVisible: false, authReason: null, authMode: 'signup' }),
 }));
