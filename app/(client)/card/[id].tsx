@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { ZoomIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AddToWalletButton } from '@/components/client/AddToWalletButton';
@@ -14,6 +15,7 @@ import { ROUTES } from '@/lib/routes';
 import { useAuthStore } from '@/stores/authStore';
 import { useClientStore } from '@/stores/clientStore';
 import { useGuestStore } from '@/stores/guestStore';
+import { usePrefsStore } from '@/stores/prefsStore';
 
 export default function CardDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -22,6 +24,7 @@ export default function CardDetailScreen() {
   const cards = useClientStore((s) => s.cards);
   const client = useClientStore((s) => s.client);
   const requireAuth = useGuestStore((s) => s.requireAuth);
+  const animationsEnabled = usePrefsStore((s) => s.animationsEnabled);
 
   const isGuest = !session;
   const demo = getDemoCard(id ?? '');
@@ -56,17 +59,21 @@ export default function CardDetailScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.content}>
-          <LoyaltyCardView
-            merchantName={view.merchantName}
-            businessType={view.businessType}
-            stampsFilled={view.stampsFilled}
-            stampsTotal={view.stampsTotal}
-            rewardLabel={view.rewardLabel}
-            totalVisits={view.totalVisits}
-            address={view.address}
-            color={view.color}
-            isDemo={view.isDemo}
-          />
+          <Animated.View
+            entering={hasAvailableReward && animationsEnabled ? ZoomIn.springify().damping(10) : undefined}
+          >
+            <LoyaltyCardView
+              merchantName={view.merchantName}
+              businessType={view.businessType}
+              stampsFilled={view.stampsFilled}
+              stampsTotal={view.stampsTotal}
+              rewardLabel={view.rewardLabel}
+              totalVisits={view.totalVisits}
+              address={view.address}
+              color={view.color}
+              isDemo={view.isDemo}
+            />
+          </Animated.View>
 
           {/* À propos du commerce (infos personnalisées par le commerçant) */}
           {view.description || view.address || view.businessType ? (
@@ -99,6 +106,8 @@ export default function CardDetailScreen() {
                 target={view.stampsFilled}
                 stampSize={32}
                 perRow={Math.min(view.stampsTotal, 5)}
+                animate={animationsEnabled}
+                haptics={animationsEnabled}
               />
               <Text style={styles.progress}>
                 {view.stampsFilled} / {view.stampsTotal} passages

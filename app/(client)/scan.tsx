@@ -9,11 +9,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
 import { useGoogleWallet } from '@/hooks/useGoogleWallet';
+import Animated, { ZoomIn } from 'react-native-reanimated';
+
 import { usePoints } from '@/hooks/usePoints';
 import { fetchClientCards } from '@/lib/queries';
 import { useAuthStore } from '@/stores/authStore';
 import { useClientStore } from '@/stores/clientStore';
 import { useGuestStore } from '@/stores/guestStore';
+import { usePrefsStore } from '@/stores/prefsStore';
 import type { ScanResult } from '@/types';
 
 type Mode = 'camera' | 'manual';
@@ -25,6 +28,7 @@ export default function ScanScreen() {
   const client = useClientStore((s) => s.client);
   const session = useAuthStore((s) => s.session);
   const requireAuth = useGuestStore((s) => s.requireAuth);
+  const animationsEnabled = usePrefsStore((s) => s.animationsEnabled);
   const queryClient = useQueryClient();
   const isGuest = !session;
 
@@ -45,11 +49,14 @@ export default function ScanScreen() {
       const res = await processScan(value);
       setResult(res);
 
-      void Haptics.notificationAsync(
-        res.ok
-          ? Haptics.NotificationFeedbackType.Success
-          : Haptics.NotificationFeedbackType.Error,
-      );
+      // Retour haptique coupé si l'utilisateur a désactivé les animations.
+      if (animationsEnabled) {
+        void Haptics.notificationAsync(
+          res.ok
+            ? Haptics.NotificationFeedbackType.Success
+            : Haptics.NotificationFeedbackType.Error,
+        );
+      }
 
       if (res.ok && !res.offline) {
         await queryClient.invalidateQueries({ queryKey: ['client-cards', client?.id] });
@@ -72,7 +79,7 @@ export default function ScanScreen() {
       }
       setBusy(false);
     },
-    [busy, processScan, queryClient, client?.id, isAndroid, updatePoints],
+    [busy, processScan, queryClient, client?.id, isAndroid, updatePoints, animationsEnabled],
   );
 
   const onScan = useCallback(({ data }: { data: string }) => void runScan(data), [runScan]);
@@ -162,7 +169,10 @@ export default function ScanScreen() {
       {/* Résultat */}
       {result ? (
         <View style={styles.resultWrap}>
-          <View style={[styles.resultCard, !result.ok && styles.resultCardError]}>
+          <Animated.View
+            entering={animationsEnabled ? ZoomIn.springify().damping(12) : undefined}
+            style={[styles.resultCard, !result.ok && styles.resultCardError]}
+          >
             {result.offline ? (
               <>
                 <Ionicons name="cloud-offline-outline" size={56} color={theme.colors.warning} />
@@ -187,7 +197,7 @@ export default function ScanScreen() {
               </>
             )}
             <Button label="Recommencer" onPress={reset} style={styles.resultBtn} />
-          </View>
+          </Animated.View>
         </View>
       ) : null}
 

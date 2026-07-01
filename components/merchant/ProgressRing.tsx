@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 
 import { theme } from '@/constants/theme';
@@ -28,8 +30,15 @@ export function ProgressRing({ value, goal, color, label, size = 124 }: Progress
   const offset = circumference * (1 - ratio);
   const center = size / 2;
 
+  // Légère pulsation quand la valeur change (par exemple après un passage).
+  const scale = useSharedValue(1);
+  useEffect(() => {
+    scale.value = withSequence(withTiming(1.04, { duration: 240 }), withTiming(1, { duration: 220 }));
+  }, [value, scale]);
+  const pulseStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
   return (
-    <View style={styles.wrap}>
+    <Animated.View style={[styles.wrap, pulseStyle]}>
       <View style={{ width: size, height: size }}>
         <Svg width={size} height={size}>
           <Circle cx={center} cy={center} r={radius} stroke={theme.colors.border} strokeWidth={stroke} fill="none" />
@@ -52,7 +61,7 @@ export function ProgressRing({ value, goal, color, label, size = 124 }: Progress
         </View>
       </View>
       <Text style={styles.label}>{label}</Text>
-    </View>
+    </Animated.View>
   );
 }
 

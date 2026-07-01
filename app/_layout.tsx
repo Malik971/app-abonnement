@@ -21,6 +21,7 @@ import { useAuthListener } from '@/hooks/useAuth';
 import { ROUTES } from '@/lib/routes';
 import { useAuthStore } from '@/stores/authStore';
 import { useGuestStore } from '@/stores/guestStore';
+import { usePrefsStore } from '@/stores/prefsStore';
 
 // On garde le splash natif visible jusqu'à ce que notre splash animé prenne le relais.
 void ExpoSplash.preventAutoHideAsync();
@@ -46,14 +47,16 @@ function RootContent({ fontsLoaded }: { fontsLoaded: boolean }) {
   const hydrated = useGuestStore((s) => s.hydrated);
   const onboardingSeen = useGuestStore((s) => s.onboardingSeen);
   const hydrateGuest = useGuestStore((s) => s.hydrate);
+  const hydratePrefs = usePrefsStore((s) => s.hydrate);
 
   const [minElapsed, setMinElapsed] = useState(false);
   const [splashDone, setSplashDone] = useState(false);
 
-  // Charge l'état invité / onboarding au démarrage.
+  // Charge l'état invité / onboarding et les préférences au démarrage.
   useEffect(() => {
     void hydrateGuest();
-  }, [hydrateGuest]);
+    void hydratePrefs();
+  }, [hydrateGuest, hydratePrefs]);
 
   // Durée minimale d'affichage du splash (sinon l'animation clignote).
   useEffect(() => {

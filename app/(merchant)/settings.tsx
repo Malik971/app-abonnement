@@ -4,6 +4,7 @@ import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
 import { UpgradeCard } from '@/components/merchant/UpgradeCard';
+import { BugReportSheet } from '@/components/ui/BugReportSheet';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -34,6 +35,7 @@ export default function SettingsScreen() {
   const [newPoints, setNewPoints] = useState('');
   const [newLabel, setNewLabel] = useState('');
   const [saving, setSaving] = useState(false);
+  const [bugOpen, setBugOpen] = useState(false);
 
   useEffect(() => {
     if (merchant) {
@@ -221,9 +223,13 @@ export default function SettingsScreen() {
         ) : null}
       </Section>
 
+      <Button label="Signaler un problème" variant="ghost" onPress={() => setBugOpen(true)} />
+
       <Text style={styles.legal}>Vos données sont hébergées en Europe. Vous pouvez les supprimer à tout moment.</Text>
 
       <Button label="Se déconnecter" variant="ghost" onPress={() => void signOutUser()} style={styles.saveBtn} />
+
+      <BugReportSheet visible={bugOpen} onClose={() => setBugOpen(false)} />
     </Screen>
   );
 }

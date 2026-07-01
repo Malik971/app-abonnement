@@ -41,8 +41,10 @@ export default function PrivacyScreen() {
       <LegalSection title="5. Partage des données">
         <LegalText>Les données sont partagées uniquement :</LegalText>
         <LegalBullet>
-          Avec les commerçants partenaires (nom du client + historique de passages chez eux
-          uniquement).
+          Avec le commerçant chez qui tu possèdes une carte, et pour cette carte seulement : ton
+          prénom, l'historique de tes passages (date et heure) et le statut de tes récompenses.
+          Ces informations sont nécessaires au fonctionnement du programme de fidélité auquel tu
+          as choisi d'adhérer. Ton adresse email n'est jamais communiquée aux commerçants.
         </LegalBullet>
         <LegalBullet>
           Avec nos sous-traitants techniques : Supabase (hébergement, serveurs Union Européenne),
@@ -87,7 +89,7 @@ export default function PrivacyScreen() {
         </LegalText>
       </LegalSection>
 
-      <Text style={styles.updated}>Date de dernière mise à jour : Juin 2026</Text>
+      <Text style={styles.updated}>Date de dernière mise à jour : Juillet 2026</Text>
     </LegalScreen>
   );
 }

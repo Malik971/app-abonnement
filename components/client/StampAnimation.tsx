@@ -19,6 +19,8 @@ interface StampAnimationProps {
   loop?: boolean;
   /** Retour haptique à chaque tampon qui s'allume. */
   haptics?: boolean;
+  /** Si faux : affichage instantané de l'état final, sans animation ni haptique. */
+  animate?: boolean;
   onComplete?: () => void;
 }
 
@@ -37,12 +39,19 @@ export function StampAnimation({
   perRow = 5,
   loop = false,
   haptics = true,
+  animate = true,
   onComplete,
 }: StampAnimationProps) {
   const end = Math.min(target ?? total, total);
   const [lit, setLit] = useState(initialFilled);
 
   useEffect(() => {
+    // Animations désactivées : on affiche directement l'état final.
+    if (!animate) {
+      setLit(end);
+      return;
+    }
+
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout>;
 
@@ -78,7 +87,7 @@ export function StampAnimation({
       clearTimeout(timer);
     };
     // Relance proprement si les paramètres changent.
-  }, [end, initialFilled, loop, haptics, onComplete]);
+  }, [end, initialFilled, loop, haptics, animate, onComplete]);
 
   const cells = Array.from({ length: total }, (_, i) => i < lit);
   const rows: boolean[][] = [];
@@ -89,7 +98,7 @@ export function StampAnimation({
       {rows.map((row, rIdx) => (
         <View key={rIdx} style={styles.row}>
           {row.map((isLit, cIdx) => (
-            <Stamp key={cIdx} lit={isLit} size={stampSize} />
+            <Stamp key={cIdx} lit={isLit} size={stampSize} animate={animate} />
           ))}
         </View>
       ))}
@@ -97,12 +106,16 @@ export function StampAnimation({
   );
 }
 
-function Stamp({ lit, size }: { lit: boolean; size: number }) {
+function Stamp({ lit, size, animate }: { lit: boolean; size: number; animate: boolean }) {
   const p = useSharedValue(lit ? 1 : 0);
 
   useEffect(() => {
-    p.value = withTiming(lit ? 1 : 0, { duration: 340, easing: Easing.out(Easing.back(2)) });
-  }, [lit, p]);
+    p.value = animate
+      ? withTiming(lit ? 1 : 0, { duration: 340, easing: Easing.out(Easing.back(2)) })
+      : lit
+        ? 1
+        : 0;
+  }, [lit, animate, p]);
 
   const fillStyle = useAnimatedStyle(() => ({
     opacity: p.value,

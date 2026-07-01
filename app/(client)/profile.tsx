@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BugReportSheet } from '@/components/ui/BugReportSheet';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { brand } from '@/constants/brand';
@@ -28,6 +29,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { useClientStore } from '@/stores/clientStore';
 import { useGuestStore } from '@/stores/guestStore';
+import { usePrefsStore } from '@/stores/prefsStore';
 
 const SUPPORT_EMAIL = 'support@fideli.app'; // TODO: remplacer par l'adresse réelle
 
@@ -98,8 +100,11 @@ function ConnectedProfile() {
   const setClient = useClientStore((s) => s.setClient);
   const clearClient = useClientStore((s) => s.clear);
   const email = useAuthStore((s) => s.user?.email);
+  const animationsEnabled = usePrefsStore((s) => s.animationsEnabled);
+  const setAnimationsEnabled = usePrefsStore((s) => s.setAnimationsEnabled);
 
   const [pushEnabled, setPushEnabled] = useState(client?.push_enabled ?? true);
+  const [bugOpen, setBugOpen] = useState(false);
 
   const [editOpen, setEditOpen] = useState(false);
   const [draftName, setDraftName] = useState(client?.first_name ?? '');
@@ -168,6 +173,8 @@ function ConnectedProfile() {
         {/* Mon compte */}
         <SectionTitle>Mon compte</SectionTitle>
         <Card style={styles.section}>
+          <LinkRow icon="time-outline" label="Mon historique" onPress={() => router.push(ROUTES.clientHistory)} />
+          <Divider />
           <LinkRow icon="create-outline" label="Modifier mon prénom" onPress={() => { setDraftName(client?.first_name ?? ''); setEditOpen(true); }} />
           <Divider />
           <LinkRow icon="trash-outline" label="Supprimer mon compte" danger onPress={() => { setConfirmText(''); setDelOpen(true); }} />
@@ -184,6 +191,19 @@ function ConnectedProfile() {
             <Switch
               value={pushEnabled}
               onValueChange={togglePush}
+              trackColor={{ true: theme.colors.primary, false: theme.colors.border }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
+          <Divider />
+          <View style={styles.switchRow}>
+            <View style={styles.switchLabel}>
+              <Ionicons name="sparkles-outline" size={20} color={theme.colors.textSecondary} />
+              <Text style={styles.linkLabel}>Animations et retours haptiques</Text>
+            </View>
+            <Switch
+              value={animationsEnabled}
+              onValueChange={(v) => void setAnimationsEnabled(v)}
               trackColor={{ true: theme.colors.primary, false: theme.colors.border }}
               thumbColor="#FFFFFF"
             />
@@ -210,6 +230,8 @@ function ConnectedProfile() {
           <LinkRow icon="help-circle-outline" label="Aide" onPress={() => router.push(ROUTES.help)} />
           <Divider />
           <LinkRow icon="mail-outline" label="Contacter le support" onPress={() => void Linking.openURL(`mailto:${SUPPORT_EMAIL}`)} />
+          <Divider />
+          <LinkRow icon="bug-outline" label="Signaler un problème" onPress={() => setBugOpen(true)} />
         </Card>
 
         {/* Session */}
@@ -270,6 +292,8 @@ function ConnectedProfile() {
           </View>
         </View>
       </Modal>
+
+      <BugReportSheet visible={bugOpen} onClose={() => setBugOpen(false)} />
     </SafeAreaView>
   );
 }

@@ -57,6 +57,7 @@ Migrations dans `supabase/migrations/`, appliquées dans l'ordre via `supabase d
 7. `007_merchant_card.sql` : personnalisation de carte (couleur, adresse, description)
 8. `008_merchant_trial.sql` : essai Pro de 60 jours
 9. `009_merchant_dashboard.sql` : objectifs commerçant + site web
+10. `010_client_reads_merchant.sql` : lecture des infos publiques du commerce par un client lié
 
 ## Edge functions
 
@@ -66,6 +67,7 @@ Dans `supabase/functions/` :
 - `stripe-checkout`, `stripe-portal`, `stripe-webhook` : abonnements
 - `notify-merchant-signup` : email à l'admin à chaque inscription commerçant
 - `approve-merchant`, `reject-merchant` : validation (réservées au service role)
+- `report-issue` : signalement de bug in-app envoyé au support
 - `google-wallet-pass` : génération / mise à jour des cartes Google Wallet
 
 Déploiement : `supabase functions deploy <nom>`.

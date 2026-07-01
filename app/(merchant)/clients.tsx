@@ -1,6 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Banner } from '@/components/ui/Banner';
@@ -9,12 +11,14 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { canSeeDetailedStats } from '@/constants/plans';
 import { theme } from '@/constants/theme';
 import { fetchMerchantClients } from '@/lib/queries';
+import { ROUTES } from '@/lib/routes';
 import { useMerchantStore } from '@/stores/merchantStore';
 import type { MerchantClientRow } from '@/types';
 
 const PAGE_SIZE = 20;
 
 export default function ClientsScreen() {
+  const router = useRouter();
   const merchant = useMerchantStore((s) => s.merchant);
   const plan = merchant?.plan ?? 'starter';
   const advanced = canSeeDetailedStats(plan); // tri/badges avancés = Pro/Premium
@@ -51,7 +55,13 @@ export default function ClientsScreen() {
           data={page}
           keyExtractor={(item) => item.card_id}
           contentContainerStyle={styles.list}
-          renderItem={({ item }) => <ClientRow client={item} showBadge={advanced} />}
+          renderItem={({ item }) => (
+            <ClientRow
+              client={item}
+              showBadge={advanced}
+              onPress={() => router.push(ROUTES.merchantClient(item.card_id))}
+            />
+          )}
           onEndReachedThreshold={0.4}
           onEndReached={() => setVisible((v) => Math.min(v + PAGE_SIZE, ordered.length))}
           ListHeaderComponent={
@@ -68,7 +78,15 @@ export default function ClientsScreen() {
   );
 }
 
-function ClientRow({ client, showBadge }: { client: MerchantClientRow; showBadge: boolean }) {
+function ClientRow({
+  client,
+  showBadge,
+  onPress,
+}: {
+  client: MerchantClientRow;
+  showBadge: boolean;
+  onPress: () => void;
+}) {
   const lastVisit =
     client.days_since_last_visit === null
       ? 'Jamais'
@@ -77,16 +95,19 @@ function ClientRow({ client, showBadge }: { client: MerchantClientRow; showBadge
         : `Il y a ${client.days_since_last_visit} j`;
 
   return (
-    <Card style={styles.row}>
-      <View style={styles.rowInfo}>
-        <View style={styles.nameRow}>
-          <Text style={styles.name}>{client.first_name || 'Client'}</Text>
-          {showBadge && client.is_inactive ? <View style={styles.badge} /> : null}
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`Voir ${client.first_name || 'ce client'}`}>
+      <Card style={styles.row}>
+        <View style={styles.rowInfo}>
+          <View style={styles.nameRow}>
+            <Text style={styles.name}>{client.first_name || 'Client'}</Text>
+            {showBadge && client.is_inactive ? <View style={styles.badge} /> : null}
+          </View>
+          <Text style={styles.lastVisit}>Dernière visite : {lastVisit}</Text>
         </View>
-        <Text style={styles.lastVisit}>Dernière visite : {lastVisit}</Text>
-      </View>
-      <Text style={styles.points}>{client.points} passages</Text>
-    </Card>
+        <Text style={styles.points}>{client.points} passages</Text>
+        <Ionicons name="chevron-forward" size={18} color={theme.colors.locked} />
+      </Card>
+    </Pressable>
   );
 }
 
@@ -97,7 +118,7 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: theme.fontSize.md, color: theme.colors.textSecondary },
   loader: { marginTop: theme.spacing.xxl },
   list: { padding: theme.spacing.md, gap: theme.spacing.sm, flexGrow: 1 },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: theme.spacing.sm },
   rowInfo: { flex: 1 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
   name: { fontSize: theme.fontSize.lg, fontWeight: '700', color: theme.colors.text },

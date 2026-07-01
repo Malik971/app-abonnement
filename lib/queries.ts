@@ -131,6 +131,150 @@ export async function redeemReward(
   return { ok: true, code: data.id.replace(/-/g, '').slice(0, 8).toUpperCase() };
 }
 
+// ── Fiche client détaillée (commerçant) ──────────────────────────────────────
+
+export interface ScanEntry {
+  id: string;
+  synced_at: string;
+  points_earned: number;
+  offline: boolean;
+}
+
+export interface RedeemedEntry {
+  id: string;
+  reward_label: string;
+  redeemed_at: string;
+}
+
+export interface MerchantClientDetail {
+  card_id: string;
+  first_name: string | null;
+  client_created_at: string | null;
+  points: number;
+  total_visits: number;
+  last_visit_at: string | null;
+  rewards: Reward[];
+  next_reward: Reward | null;
+  points_to_next: number;
+  scans: ScanEntry[];
+  redeemed: RedeemedEntry[];
+  /** Nombre de récompenses déjà obtenues (sert au badge « Client fidèle »). */
+  completed_count: number;
+}
+
+interface RawClientDetail {
+  id: string;
+  points: number;
+  total_visits: number;
+  last_visit_at: string | null;
+  clients: { first_name: string | null; created_at: string | null } | null;
+  loyalty_programs: { rewards: Reward[] } | null;
+}
+
+/**
+ * Détail d'un client pour le commerçant (par carte). L'email n'est
+ * volontairement PAS exposé (minimisation des données) : le commerçant n'en a
+ * pas besoin pour gérer la fidélité.
+ */
+export async function fetchMerchantClientDetail(cardId: string): Promise<MerchantClientDetail | null> {
+  const { data: card } = await supabase
+    .from('loyalty_cards')
+    .select('id, points, total_visits, last_visit_at, clients(first_name, created_at), loyalty_programs(rewards)')
+    .eq('id', cardId)
+    .maybeSingle();
+  if (!card) return null;
+
+  const raw = card as unknown as RawClientDetail;
+  const rewards = raw.loyalty_programs?.rewards ?? [];
+  const { next_reward, points_to_next } = computeNextReward(raw.points, rewards);
+
+  const { data: scans } = await supabase
+    .from('scans')
+    .select('id, synced_at, points_earned, offline')
+    .eq('card_id', cardId)
+    .order('synced_at', { ascending: false });
+
+  const { data: redeemed } = await supabase
+    .from('redeemed_rewards')
+    .select('id, reward_label, redeemed_at')
+    .eq('card_id', cardId)
+    .order('redeemed_at', { ascending: false });
+
+  return {
+    card_id: raw.id,
+    first_name: raw.clients?.first_name ?? null,
+    client_created_at: raw.clients?.created_at ?? null,
+    points: raw.points,
+    total_visits: raw.total_visits,
+    last_visit_at: raw.last_visit_at,
+    rewards,
+    next_reward,
+    points_to_next,
+    scans: (scans ?? []) as ScanEntry[],
+    redeemed: (redeemed ?? []) as RedeemedEntry[],
+    completed_count: (redeemed ?? []).length,
+  };
+}
+
+// ── Historique (client) ───────────────────────────────────────────────────────
+
+export interface HistoryScan {
+  id: string;
+  synced_at: string;
+  business_name: string;
+}
+
+export interface HistoryReward {
+  id: string;
+  reward_label: string;
+  redeemed_at: string;
+  business_name: string;
+}
+
+export interface ClientHistory {
+  scans: HistoryScan[];
+  rewards: HistoryReward[];
+}
+
+/** Historique du client : passages horodatés et récompenses obtenues. */
+export async function fetchClientHistory(clientId: string): Promise<ClientHistory> {
+  const { data: scans } = await supabase
+    .from('scans')
+    .select('id, synced_at, merchants(business_name)')
+    .eq('client_id', clientId)
+    .order('synced_at', { ascending: false })
+    .limit(100);
+
+  // RLS restreint déjà aux récompenses des cartes du client.
+  const { data: rewards } = await supabase
+    .from('redeemed_rewards')
+    .select('id, reward_label, redeemed_at, loyalty_cards(merchants(business_name))')
+    .order('redeemed_at', { ascending: false })
+    .limit(100);
+
+  const scanList: HistoryScan[] = (scans ?? []).map((r) => {
+    const row = r as unknown as { id: string; synced_at: string; merchants: { business_name: string } | null };
+    return { id: row.id, synced_at: row.synced_at, business_name: row.merchants?.business_name ?? 'Commerce' };
+  });
+
+  const rewardList: HistoryReward[] = (rewards ?? []).map((r) => {
+    const row = r as unknown as {
+      id: string;
+      reward_label: string;
+      redeemed_at: string;
+      loyalty_cards: { merchants: { business_name: string } | null } | null;
+    };
+    return {
+      id: row.id,
+      reward_label: row.reward_label,
+      redeemed_at: row.redeemed_at,
+      business_name: row.loyalty_cards?.merchants?.business_name ?? 'Commerce',
+    };
+  });
+
+  return { scans: scanList, rewards: rewardList };
+}
+
 // ── Recherche & adhésion (client) ─────────────────────────────────────────────
 
 /** Recherche un commerce par nom (fonction SQL search_merchants). */
@@ -244,6 +388,7 @@ export async function fetchMerchantDashboard(
     inactive_clients_count: null,
     top_clients: null,
     busiest_day: null,
+    busiest_hour: null,
     no_scan_alert: noScanAlert,
   };
 
@@ -252,7 +397,9 @@ export async function fetchMerchantDashboard(
     const clients = await fetchMerchantClients(merchant.id);
     stats.inactive_clients_count = clients.filter((c) => c.is_inactive).length;
     stats.top_clients = [...clients].sort((a, b) => b.points - a.points).slice(0, 5);
-    stats.busiest_day = await fetchBusiestDay(merchant.id);
+    const peaks = await fetchPeaks(merchant.id);
+    stats.busiest_day = peaks.busiest_day;
+    stats.busiest_hour = peaks.busiest_hour;
   }
 
   return stats;
@@ -260,8 +407,13 @@ export async function fetchMerchantDashboard(
 
 const WEEKDAYS_FR = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 
-/** Jour de la semaine le plus chargé sur les 30 derniers jours (ou null). */
-async function fetchBusiestDay(merchantId: string): Promise<string | null> {
+/**
+ * Jour et tranche horaire de plus forte affluence sur les 30 derniers jours.
+ * Renvoie null si aucun passage (on n'invente pas de valeur par défaut).
+ */
+async function fetchPeaks(
+  merchantId: string,
+): Promise<{ busiest_day: string | null; busiest_hour: string | null }> {
   const since = new Date(Date.now() - 30 * DAY_MS).toISOString();
   const { data } = await supabase
     .from('scans')
@@ -269,14 +421,23 @@ async function fetchBusiestDay(merchantId: string): Promise<string | null> {
     .eq('merchant_id', merchantId)
     .gte('synced_at', since);
 
-  if (!data || data.length === 0) return null;
+  if (!data || data.length === 0) return { busiest_day: null, busiest_hour: null };
 
-  const tally = new Array(7).fill(0) as number[];
+  const dayTally = new Array(7).fill(0) as number[];
+  const hourTally = new Array(24).fill(0) as number[];
   for (const row of data as { synced_at: string }[]) {
-    const day = new Date(row.synced_at).getDay();
-    tally[day] = (tally[day] ?? 0) + 1;
+    const d = new Date(row.synced_at);
+    dayTally[d.getDay()] = (dayTally[d.getDay()] ?? 0) + 1;
+    hourTally[d.getHours()] = (hourTally[d.getHours()] ?? 0) + 1;
   }
-  let best = 0;
-  for (let i = 1; i < 7; i++) if (tally[i]! > tally[best]!) best = i;
-  return WEEKDAYS_FR[best]!;
+
+  let bestDay = 0;
+  for (let i = 1; i < 7; i++) if (dayTally[i]! > dayTally[bestDay]!) bestDay = i;
+  let bestHour = 0;
+  for (let i = 1; i < 24; i++) if (hourTally[i]! > hourTally[bestHour]!) bestHour = i;
+
+  return {
+    busiest_day: WEEKDAYS_FR[bestDay]!,
+    busiest_hour: `${bestHour}h-${(bestHour + 1) % 24}h`,
+  };
 }

@@ -86,6 +86,9 @@ export function nextPlan(plan: PlanId): PlanId | null {
 /** Durée de l'essai Pro offert à l'inscription commerçant. */
 export const TRIAL_DAYS = 60;
 
+/** Nombre de récompenses obtenues à partir duquel un client est « fidèle ». */
+export const LOYAL_CLIENT_THRESHOLD = 3;
+
 /** Forme minimale d'un commerçant pour le calcul du plan / de l'essai. */
 export interface PlanContext {
   plan: PlanId;

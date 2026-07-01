@@ -64,6 +64,7 @@ export default function DashboardScreen() {
   const topClients = data?.top_clients ?? [];
   const hasTopClients = topClients.length > 0;
   const hasBusiestDay = Boolean(data?.busiest_day);
+  const hasBusiestHour = Boolean(data?.busiest_hour);
   const hasInactive = data?.inactive_clients_count != null;
 
   async function handleUpgrade() {
@@ -77,7 +78,7 @@ export default function DashboardScreen() {
 
   function openMaps() {
     if (!merchant?.address) return;
-    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(merchant.address)}`;
+    const url = `https://maps.google.com/?q=${encodeURIComponent(merchant.address)}`;
     void Linking.openURL(url);
   }
 
@@ -85,7 +86,7 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <BrandHeader firstName={merchant?.business_name} onAvatarPress={() => router.push(ROUTES.merchantSettings)} />
+      <BrandHeader firstName={merchant?.business_name} onAvatarPress={() => router.push(ROUTES.merchantHelp)} />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
@@ -188,7 +189,14 @@ export default function DashboardScreen() {
                   </Card>
                 ) : null}
 
-                {!hasInactive && !hasTopClients && !hasBusiestDay ? (
+                {hasBusiestHour ? (
+                  <Card style={styles.detailCard}>
+                    <Text style={styles.detailValue}>{data?.busiest_hour}</Text>
+                    <Text style={styles.detailLabel}>Heure de forte affluence</Text>
+                  </Card>
+                ) : null}
+
+                {!hasInactive && !hasTopClients && !hasBusiestDay && !hasBusiestHour ? (
                   <Card style={styles.detailCard}>
                     <Text style={styles.detailLabel}>
                       Pas encore assez de passages pour calculer tes statistiques détaillées. Elles

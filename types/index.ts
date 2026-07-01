@@ -177,6 +177,8 @@ export interface MerchantDashboardStats {
   inactive_clients_count: number | null;
   top_clients: MerchantClientRow[] | null;
   busiest_day: string | null;
+  /** Tranche horaire de plus forte affluence (ex : « 12h-13h »), Pro/Premium. */
+  busiest_hour: string | null;
   /** True si aucun scan depuis 7 jours → alerte rouge dashboard. */
   no_scan_alert: boolean;
 }

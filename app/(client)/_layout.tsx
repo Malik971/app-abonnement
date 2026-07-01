@@ -72,6 +72,7 @@ export default function ClientLayout() {
         <Tabs.Screen name="privacy" options={{ href: null }} />
         <Tabs.Screen name="terms" options={{ href: null }} />
         <Tabs.Screen name="help" options={{ href: null }} />
+        <Tabs.Screen name="history" options={{ href: null }} />
       </Tabs>
 
       {/* Mur de création de compte (mode invité), disponible sur tous les onglets. */}

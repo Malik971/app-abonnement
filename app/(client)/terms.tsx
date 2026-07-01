@@ -57,7 +57,7 @@ export default function TermsScreen() {
         </LegalText>
       </LegalSection>
 
-      <Text style={styles.updated}>Dernière mise à jour : Juin 2026</Text>
+      <Text style={styles.updated}>Dernière mise à jour : Juillet 2026</Text>
     </LegalScreen>
   );
 }
