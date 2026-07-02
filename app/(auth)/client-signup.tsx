@@ -9,8 +9,8 @@ import { ROUTES } from '@/lib/routes';
 
 /**
  * Inscription / connexion client en plein écran (version route de l'AuthSheet).
- * Même formulaire OTP + consentement. La redirection après succès est gérée par
- * la garde racine.
+ * Email + mot de passe ou connexion sociale. La redirection après succès est
+ * gérée par la garde racine.
  */
 export default function ClientSignupScreen() {
   const router = useRouter();
@@ -19,8 +19,10 @@ export default function ClientSignupScreen() {
     <Screen scroll>
       <BrandWordmark />
       <View style={styles.header}>
-        <Text style={styles.title}>Créer mon compte</Text>
-        <Text style={styles.subtitle}>Prénom + email, et tu reçois un code. C'est tout.</Text>
+        <Text style={styles.title}>Créez un compte Fidéli</Text>
+        <Text style={styles.subtitle}>
+          Ne perdez plus jamais vos cartes : retrouvez-les même en cas de perte de votre téléphone.
+        </Text>
       </View>
 
       <ClientAuthForm onSuccess={() => router.replace(ROUTES.clientHome)} />

@@ -11,6 +11,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.fidelite.guadeloupe",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "NSCameraUsageDescription": "L'accès à la caméra permet de scanner le QR code en caisse pour cumuler vos points de fidélité.",
         "ITSAppUsesNonExemptEncryption": false
@@ -63,7 +64,23 @@
           "color": "#D62828"
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      "expo-apple-authentication",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.REMPLACER_PAR_REVERSED_CLIENT_ID"
+        }
+      ],
+      [
+        "react-native-fbsdk-next",
+        {
+          "appID": "REMPLACER_FB_APP_ID",
+          "clientToken": "REMPLACER_FB_CLIENT_TOKEN",
+          "displayName": "Fidéli",
+          "scheme": "fbREMPLACER_FB_APP_ID"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import NetInfo from '@react-native-community/netinfo';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -8,28 +8,36 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoyaltyCardView } from '@/components/client/LoyaltyCardView';
 import { MerchantQrCard } from '@/components/merchant/MerchantQrCard';
+import { MerchantTour } from '@/components/merchant/MerchantTour';
 import { ProgressRing } from '@/components/merchant/ProgressRing';
 import { UpgradeCard } from '@/components/merchant/UpgradeCard';
 import { BrandHeader } from '@/components/ui/BrandHeader';
 import { Banner } from '@/components/ui/Banner';
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { LockedOverlay } from '@/components/ui/LockedOverlay';
-import { canSeeDetailedStats, getEffectivePlan, nextPlan } from '@/constants/plans';
+import { PLANS, canSeeDetailedStats, getEffectivePlan, isInTrial, nextPlan, trialDaysLeft } from '@/constants/plans';
 import { theme } from '@/constants/theme';
 import { shade } from '@/lib/color';
 import { fetchMerchantDashboard } from '@/lib/queries';
 import { ROUTES } from '@/lib/routes';
 import { startCheckout } from '@/lib/stripe';
+import { supabase } from '@/lib/supabase';
 import { useMerchantStore } from '@/stores/merchantStore';
+import { usePrefsStore } from '@/stores/prefsStore';
 
 // Rouge de marque adouci pour l'anneau "passages" (le rouge plein est trop dur).
 const SOFT_RED = shade(theme.colors.primary, 0.25);
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const merchant = useMerchantStore((s) => s.merchant);
   const program = useMerchantStore((s) => s.program);
   const setStats = useMerchantStore((s) => s.setStats);
+  const prefsHydrated = usePrefsStore((s) => s.hydrated);
+  const merchantTourDone = usePrefsStore((s) => s.merchantTourDone);
+  const markMerchantTourDone = usePrefsStore((s) => s.markMerchantTourDone);
   const [online, setOnline] = useState(true);
 
   useEffect(() => {
@@ -43,6 +51,8 @@ export default function DashboardScreen() {
   // sur l'essai lui-même : le tableau de bord reste focalisé sur l'activité.
   const plan = merchant ? getEffectivePlan(merchant) : 'starter';
   const detailed = canSeeDetailedStats(plan);
+  const onTrial = merchant ? isInTrial(merchant) : false;
+  const daysLeft = merchant ? trialDaysLeft(merchant) : 0;
 
   const goalClients = merchant?.goal_clients ?? 50;
   const goalDaily = merchant?.goal_daily_scans ?? 10;
@@ -76,10 +86,32 @@ export default function DashboardScreen() {
     }
   }
 
+  // Active l'abonnement Pro sans attendre la fin de l'essai.
+  async function subscribePro() {
+    if (!merchant) return;
+    const res = await startCheckout(merchant.id, 'pro');
+    if (!res.ok) {
+      Alert.alert('Abonnement', res.error ?? 'Impossible de démarrer le paiement.');
+    }
+  }
+
   function openMaps() {
     if (!merchant?.address) return;
     const url = `https://maps.google.com/?q=${encodeURIComponent(merchant.address)}`;
     void Linking.openURL(url);
+  }
+
+  // Outils DEV : jeux de données fictives pour visualiser les statistiques.
+  async function seedTestData() {
+    if (!merchant) return;
+    await supabase.rpc('seed_test_data', { p_merchant_id: merchant.id });
+    await queryClient.invalidateQueries();
+  }
+
+  async function clearTestData() {
+    if (!merchant) return;
+    await supabase.rpc('clear_test_data', { p_merchant_id: merchant.id });
+    await queryClient.invalidateQueries();
   }
 
   const previewTotal = Math.max(1, program?.rewards?.[0]?.points_required ?? 8);
@@ -92,7 +124,20 @@ export default function DashboardScreen() {
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
       >
         <Text style={styles.business}>{merchant?.business_name ?? 'Mon commerce'}</Text>
-        <Text style={styles.planTag}>Plan {plan}</Text>
+        <Text style={styles.planTag}>{onTrial ? `Essai Pro · ${daysLeft} j restants` : `Plan ${plan}`}</Text>
+
+        {/* Essai Pro gratuit : mise en avant de l'offre (acquisition commerciale). */}
+        {onTrial ? (
+          <View style={styles.trialCard}>
+            <Text style={styles.trialTitle}>2 mois Pro offerts</Text>
+            <Text style={styles.trialText}>
+              Il te reste {daysLeft} jour{daysLeft > 1 ? 's' : ''} d'essai. Tu profites de toutes les
+              fonctionnalités Pro. À la fin, le forfait Pro ({PLANS.pro.price_eur}€/mois) démarre sauf
+              si tu annules. On te préviendra 7 jours puis 1 jour avant.
+            </Text>
+            <Button label={`Activer Pro maintenant · ${PLANS.pro.price_eur}€/mois`} variant="secondary" onPress={subscribePro} />
+          </View>
+        ) : null}
 
         {/* Ma carte : aperçu en haut, tout le bloc mène à la personnalisation. */}
         {merchant ? (
@@ -124,8 +169,8 @@ export default function DashboardScreen() {
           </View>
         ) : null}
 
-        {program ? (
-          <MerchantQrCard token={program.qr_code_token} businessName={merchant?.business_name ?? 'Mon commerce'} />
+        {merchant ? (
+          <MerchantQrCard token={program?.qr_code_token ?? ''} businessName={merchant.business_name} />
         ) : null}
 
         {!online && dataUpdatedAt ? (
@@ -242,7 +287,20 @@ export default function DashboardScreen() {
             )}
           </>
         )}
+
+        {__DEV__ && merchant ? (
+          <View style={styles.devBox}>
+            <Text style={styles.devTitle}>DEV</Text>
+            <Button label="Injecter données de test" variant="ghost" onPress={seedTestData} />
+            <Button label="Vider les données de test" variant="ghost" onPress={clearTestData} />
+          </View>
+        ) : null}
       </ScrollView>
+
+      {/* Tutoriel de premier lancement (une seule fois, revisible depuis les réglages). */}
+      {prefsHydrated && merchant && !merchantTourDone ? (
+        <MerchantTour onDone={() => void markMerchantTourDone()} />
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -252,6 +310,14 @@ const styles = StyleSheet.create({
   content: { padding: theme.spacing.md, gap: theme.spacing.md },
   business: { fontFamily: theme.fonts.titleBold, fontSize: theme.fontSize.xxl, color: theme.colors.text },
   planTag: { fontFamily: theme.fonts.mono, fontSize: theme.fontSize.sm, color: theme.colors.textSecondary, textTransform: 'uppercase', letterSpacing: 1, marginTop: 2 },
+  trialCard: {
+    backgroundColor: theme.colors.primaryLight,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  trialTitle: { fontFamily: theme.fonts.titleBold, fontSize: theme.fontSize.lg, color: theme.colors.text },
+  trialText: { fontSize: theme.fontSize.sm, color: theme.colors.textSecondary, lineHeight: 20 },
   cardSection: { gap: theme.spacing.sm },
   cardHintRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: theme.spacing.xs, marginTop: theme.spacing.xs },
   cardHint: { fontFamily: theme.fonts.title, fontSize: theme.fontSize.sm, color: theme.colors.primary },
@@ -283,4 +349,15 @@ const styles = StyleSheet.create({
   detailValue: { fontSize: theme.fontSize.xxl, fontWeight: '800', color: theme.colors.text },
   detailLabel: { fontSize: theme.fontSize.md, color: theme.colors.textSecondary },
   topClient: { fontSize: theme.fontSize.md, color: theme.colors.text },
+  devBox: {
+    marginTop: theme.spacing.xl,
+    padding: theme.spacing.sm,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: theme.colors.border,
+    gap: theme.spacing.xs,
+    opacity: 0.8,
+  },
+  devTitle: { fontFamily: theme.fonts.mono, fontSize: theme.fontSize.xs, letterSpacing: 1, color: theme.colors.locked },
 });

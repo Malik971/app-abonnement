@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
@@ -12,16 +13,25 @@ import { Screen } from '@/components/ui/Screen';
 import { PLANS, isInTrial, trialDaysLeft } from '@/constants/plans';
 import { theme } from '@/constants/theme';
 import { signOutUser } from '@/hooks/useAuth';
+import { ROUTES } from '@/lib/routes';
 import { openBillingPortal } from '@/lib/stripe';
 import { supabase } from '@/lib/supabase';
 import { useMerchantStore } from '@/stores/merchantStore';
+import { usePrefsStore } from '@/stores/prefsStore';
 import type { Reward } from '@/types';
 
 export default function SettingsScreen() {
   const merchant = useMerchantStore((s) => s.merchant);
   const program = useMerchantStore((s) => s.program);
   const setProgram = useMerchantStore((s) => s.setProgram);
+  const resetMerchantTour = usePrefsStore((s) => s.resetMerchantTour);
+  const router = useRouter();
   const queryClient = useQueryClient();
+
+  async function replayTour() {
+    await resetMerchantTour();
+    router.replace(ROUTES.merchantDashboard);
+  }
 
   const [businessName, setBusinessName] = useState('');
   const [businessType, setBusinessType] = useState('');
@@ -223,6 +233,7 @@ export default function SettingsScreen() {
         ) : null}
       </Section>
 
+      <Button label="Revoir le tutoriel" variant="ghost" onPress={replayTour} />
       <Button label="Signaler un problème" variant="ghost" onPress={() => setBugOpen(true)} />
 
       <Text style={styles.legal}>Vos données sont hébergées en Europe. Vous pouvez les supprimer à tout moment.</Text>

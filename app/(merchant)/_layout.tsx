@@ -9,7 +9,7 @@ import { canSendPush, getEffectivePlan } from '@/constants/plans';
 import { theme } from '@/constants/theme';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useTrialReminders } from '@/hooks/useTrialReminders';
-import { fetchMerchantByUser, fetchProgram } from '@/lib/queries';
+import { ensureProgram, fetchMerchantByUser } from '@/lib/queries';
 import { useAuthStore } from '@/stores/authStore';
 import { useMerchantStore } from '@/stores/merchantStore';
 
@@ -53,7 +53,7 @@ export default function MerchantLayout() {
 
   const { data: programData } = useQuery({
     queryKey: ['program', merchant?.id],
-    queryFn: () => fetchProgram(merchant!.id),
+    queryFn: () => ensureProgram(merchant!.id),
     enabled: Boolean(merchant?.id),
   });
 

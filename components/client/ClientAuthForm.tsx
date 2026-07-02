@@ -1,172 +1,187 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { theme } from '@/constants/theme';
-import { startEmailOtp, verifyEmailOtp } from '@/hooks/useAuth';
+import { PASSWORD_MIN, signInClient, signUpClient } from '@/hooks/useAuth';
+import { signInWithApple, signInWithFacebook, signInWithGoogle } from '@/hooks/useSocialAuth';
 import { saveConsent } from '@/lib/consent';
 import { useAuthStore } from '@/stores/authStore';
 import { useGuestStore } from '@/stores/guestStore';
 
 type Mode = 'signup' | 'login';
+type Provider = 'apple' | 'google' | 'facebook';
 
 interface ClientAuthFormProps {
-  /** Mode initial : créer un compte ou se connecter. Défaut : signup. */
   initialMode?: Mode;
-  /** Appelé après une connexion réussie (la redirection est gérée par la garde). */
   onSuccess?: () => void;
 }
 
 /**
- * Inscription OU connexion client par OTP email (code à 6 chiffres).
- *  - Créer un compte : prénom + email + consentement RGPD.
- *  - Se connecter     : email seul (le compte existe déjà).
- * Le même code OTP sert aux deux ; un toggle permet de basculer.
+ * Inscription / connexion client : email + mot de passe (8 caractères minimum)
+ * ou connexion sociale (Apple, Google, Facebook). Charte Fidéli.
  */
 export function ClientAuthForm({ initialMode = 'signup', onSuccess }: ClientAuthFormProps) {
   const setConsent = useAuthStore((s) => s.setConsent);
   const leaveGuest = useGuestStore((s) => s.leaveGuest);
 
   const [mode, setMode] = useState<Mode>(initialMode);
-  const [step, setStep] = useState<'email' | 'code'>('email');
-  const [firstName, setFirstName] = useState('');
   const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
-  const [consent, setConsentChecked] = useState(false);
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [social, setSocial] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const isSignup = mode === 'signup';
+  const emailValid = email.trim().length > 3 && email.includes('@');
+  const canSubmit = isSignup ? emailValid && password.length >= PASSWORD_MIN : emailValid && password.length > 0;
+  const busy = loading || social !== null;
 
-  function switchMode(next: Mode) {
-    setMode(next);
-    setStep('email');
-    setError(null);
-  }
-
-  async function sendCode() {
-    setLoading(true);
-    setError(null);
-    const { error } = await startEmailOtp(email);
-    setLoading(false);
-    if (error) {
-      // Message simple pour le client en production ; détail technique en dev.
-      setError(
-        __DEV__
-          ? "Envoi du code impossible. (DEV) En test, Resend n'envoie qu'à l'adresse autorisée du compte ; vérifie aussi la config d'envoi d'emails Supabase."
-          : "Nous n'avons pas pu envoyer ton code pour le moment. Vérifie ton adresse email et réessaie dans un instant.",
-      );
-      return;
-    }
-    setStep('code');
-  }
-
-  async function verify() {
-    setLoading(true);
-    setError(null);
-    // En connexion, on n'envoie pas de prénom (on n'écrase pas l'existant).
-    const { error } = await verifyEmailOtp(email, code, isSignup ? firstName : '');
-    if (error) {
-      setLoading(false);
-      setError('Code invalide ou expiré. Réessaie.');
-      return;
-    }
-    // Le compte existe = consentement déjà donné à l'inscription.
+  // Consentement RGPD accordé au moment de la création / connexion du compte.
+  async function afterSuccess() {
     await saveConsent(true);
     setConsent(true);
     await leaveGuest();
     setLoading(false);
+    setSocial(null);
     onSuccess?.();
   }
 
-  const Toggle = (
-    <View style={styles.toggle}>
-      {(['signup', 'login'] as const).map((m) => (
-        <Text
-          key={m}
-          onPress={() => switchMode(m)}
-          style={[styles.toggleItem, mode === m && styles.toggleItemActive]}
-        >
-          {m === 'signup' ? 'Créer un compte' : 'Se connecter'}
-        </Text>
-      ))}
-    </View>
-  );
+  function switchMode(next: Mode) {
+    setMode(next);
+    setError(null);
+  }
 
-  if (step === 'code') {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.hint}>Code envoyé à {email}. Saisis les 6 chiffres reçus par email.</Text>
-        <Input
-          label="Code reçu par email"
-          placeholder="123456"
-          keyboardType="number-pad"
-          value={code}
-          onChangeText={setCode}
-        />
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        <Button
-          label={isSignup ? 'Valider mon compte' : 'Se connecter'}
-          onPress={verify}
-          loading={loading}
-          disabled={code.length < 6}
-        />
-        <Button label="Changer d'email" variant="ghost" onPress={() => setStep('email')} />
-      </View>
-    );
+  async function submit() {
+    if (isSignup && password.length < PASSWORD_MIN) {
+      setError(`Le mot de passe doit contenir au moins ${PASSWORD_MIN} caractères.`);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    const res = isSignup ? await signUpClient(email, password) : await signInClient(email, password);
+    if (res.error) {
+      setLoading(false);
+      setError(
+        isSignup
+          ? 'Création impossible. Cet email est peut-être déjà utilisé.'
+          : 'Email ou mot de passe incorrect.',
+      );
+      return;
+    }
+    await afterSuccess();
+  }
+
+  async function onSocial(provider: Provider) {
+    setError(null);
+    setSocial(provider);
+    const fn =
+      provider === 'apple' ? signInWithApple : provider === 'google' ? signInWithGoogle : signInWithFacebook;
+    const res = await fn();
+    if (res.ok) {
+      await afterSuccess();
+      return;
+    }
+    setSocial(null);
+    if (res.error) setError(res.error);
   }
 
   return (
     <View style={styles.container}>
-      {Toggle}
-
-      {isSignup ? (
-        <Input label="Prénom" placeholder="Ton prénom" value={firstName} onChangeText={setFirstName} />
-      ) : null}
+      <View style={styles.toggle}>
+        {(['signup', 'login'] as const).map((m) => (
+          <Text
+            key={m}
+            onPress={() => switchMode(m)}
+            style={[styles.toggleItem, mode === m && styles.toggleItemActive]}
+          >
+            {m === 'signup' ? 'Créer un compte' : 'Se connecter'}
+          </Text>
+        ))}
+      </View>
 
       <Input
-        label="Email"
-        placeholder="tonemail@exemple.com"
+        label="Mon adresse email"
+        placeholder="prenom@email.com"
         keyboardType="email-address"
         autoCapitalize="none"
         autoComplete="email"
         value={email}
         onChangeText={setEmail}
       />
-
-      {isSignup ? (
-        <Pressable
-          style={styles.consentRow}
-          onPress={() => setConsentChecked((v) => !v)}
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: consent }}
-        >
-          <Ionicons
-            name={consent ? 'checkbox' : 'square-outline'}
-            size={22}
-            color={consent ? theme.colors.primary : theme.colors.locked}
-          />
-          <Text style={styles.consentText}>
-            J'accepte le traitement de mes données pour gérer mes cartes de fidélité (RGPD).
-          </Text>
-        </Pressable>
-      ) : null}
+      <Input
+        label={isSignup ? 'Créer un mot de passe' : 'Mot de passe'}
+        placeholder={isSignup ? `${PASSWORD_MIN} caractères minimum` : '••••••••'}
+        secureTextEntry
+        value={password}
+        onChangeText={setPassword}
+      />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Button
-        label="Recevoir le code"
-        onPress={sendCode}
-        loading={loading}
-        disabled={isSignup ? !firstName.trim() || !email.trim() || !consent : !email.trim()}
-      />
+
+      <Pressable onPress={submit} disabled={!canSubmit || busy} style={styles.mainWrap}>
+        <LinearGradient
+          colors={[theme.colors.gradientStart, theme.colors.gradientMid, theme.colors.gradientEnd]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[styles.mainBtn, (!canSubmit || busy) && styles.mainBtnDisabled]}
+        >
+          {loading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.mainLabel}>{isSignup ? 'Créer mon compte' : 'Se connecter'}</Text>
+          )}
+        </LinearGradient>
+      </Pressable>
+
+      {isSignup ? (
+        <Text style={styles.legal}>
+          En créant un compte, tu acceptes le traitement de tes données pour gérer tes cartes de
+          fidélité (voir Confidentialité).
+        </Text>
+      ) : null}
+
+      {/* Séparateur */}
+      <View style={styles.separator}>
+        <View style={styles.line} />
+        <Text style={styles.or}>Ou</Text>
+        <View style={styles.line} />
+      </View>
+
+      {/* Boutons sociaux (cercles outline) */}
+      <View style={styles.socials}>
+        {Platform.OS === 'ios' ? (
+          <SocialCircle icon="logo-apple" color={theme.colors.text} loading={social === 'apple'} onPress={() => onSocial('apple')} />
+        ) : null}
+        <SocialCircle icon="logo-google" color="#DB4437" loading={social === 'google'} onPress={() => onSocial('google')} />
+        <SocialCircle icon="logo-facebook" color="#1877F2" loading={social === 'facebook'} onPress={() => onSocial('facebook')} />
+      </View>
     </View>
   );
 }
 
+function SocialCircle({
+  icon,
+  color,
+  loading,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+  loading: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable style={styles.circle} onPress={onPress} disabled={loading} accessibilityRole="button">
+      {loading ? <ActivityIndicator color={theme.colors.text} /> : <Ionicons name={icon} size={26} color={color} />}
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: { gap: theme.spacing.xs },
+  container: { gap: theme.spacing.sm },
   toggle: {
     flexDirection: 'row',
     backgroundColor: theme.colors.primaryLight,
@@ -185,8 +200,29 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   toggleItemActive: { backgroundColor: theme.colors.surface, color: theme.colors.text },
-  hint: { fontSize: theme.fontSize.sm, color: theme.colors.textSecondary, marginBottom: theme.spacing.sm },
-  consentRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, paddingVertical: theme.spacing.sm },
-  consentText: { flex: 1, fontSize: theme.fontSize.sm, color: theme.colors.textSecondary, lineHeight: 18 },
-  error: { color: theme.colors.danger, fontSize: theme.fontSize.sm, marginBottom: theme.spacing.xs },
+  error: { color: theme.colors.danger, fontSize: theme.fontSize.sm },
+  mainWrap: { marginTop: theme.spacing.xs },
+  mainBtn: {
+    height: 54,
+    borderRadius: theme.radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mainBtnDisabled: { opacity: 0.5 },
+  mainLabel: { color: '#FFFFFF', fontFamily: theme.fonts.titleBold, fontSize: theme.fontSize.lg },
+  legal: { fontSize: theme.fontSize.xs, color: theme.colors.textSecondary, textAlign: 'center', lineHeight: 16 },
+  separator: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, marginVertical: theme.spacing.sm },
+  line: { flex: 1, height: 1, backgroundColor: theme.colors.border },
+  or: { fontFamily: theme.fonts.titleBold, fontSize: theme.fontSize.sm, color: theme.colors.textSecondary },
+  socials: { flexDirection: 'row', justifyContent: 'center', gap: theme.spacing.lg },
+  circle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

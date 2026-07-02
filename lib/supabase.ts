@@ -9,6 +9,7 @@ import 'react-native-url-polyfill/auto';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
+import { AppState } from 'react-native';
 
 import type { Database } from '@/types';
 
@@ -48,3 +49,15 @@ export const supabase = createClient<Database>(
     },
   },
 );
+
+// Rafraîchit le token tant que l'app est au premier plan (recommandation
+// Supabase pour React Native). Combiné à persistSession + AsyncStorage, la
+// session est restaurée au démarrage et l'utilisateur reste connecté tant qu'il
+// ne se déconnecte pas manuellement.
+AppState.addEventListener('change', (state) => {
+  if (state === 'active') {
+    void supabase.auth.startAutoRefresh();
+  } else {
+    void supabase.auth.stopAutoRefresh();
+  }
+});

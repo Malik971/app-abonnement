@@ -61,21 +61,28 @@ export function useAuthListener(): void {
       return withTimeout(loadRoleForUser(session.user.id), STARTUP_TIMEOUT_MS, null);
     }
 
+    // Filet de sécurité : on débloque le splash au bout de STARTUP_TIMEOUT_MS
+    // même si getSession traîne (ex : rafraîchissement de token lent). On NE met
+    // PAS la session à null ici : sinon un simple refresh lent déconnecterait
+    // l'utilisateur alors que sa session est bien persistée dans AsyncStorage.
+    const splashTimer = setTimeout(() => {
+      if (active) setInitializing(false);
+    }, STARTUP_TIMEOUT_MS);
+
     async function bootstrap() {
       try {
-        // getSession peut pendre (token à rafraîchir, URL Supabase injoignable…)
-        // → on borne l'attente pour ne jamais figer l'écran de chargement.
-        const session = await withTimeout(
-          supabase.auth.getSession().then((r) => r.data.session),
-          STARTUP_TIMEOUT_MS,
-          null,
-        );
-        const role = await resolveRole(session);
-        if (active) setAuth({ session, role });
+        // Restaure la session persistée (rafraîchit le token si besoin via le
+        // refresh token stocké). On n'écrit la session que si elle existe, pour
+        // ne jamais écraser une session valide en cas de lenteur.
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          const role = await resolveRole(data.session);
+          if (active) setAuth({ session: data.session, role });
+        }
       } catch (e) {
-        if (__DEV__) console.warn('[auth] bootstrap échoué, on continue sans session :', e);
+        if (__DEV__) console.warn('[auth] bootstrap échoué, on continue :', e);
       } finally {
-        // On débloque TOUJOURS le splash, quoi qu'il arrive.
+        // Absence de session gérée par onAuthStateChange (INITIAL_SESSION).
         if (active) setInitializing(false);
       }
     }
@@ -94,6 +101,7 @@ export function useAuthListener(): void {
 
     return () => {
       active = false;
+      clearTimeout(splashTimer);
       sub.subscription.unsubscribe();
     };
   }, [setAuth, setInitializing]);
@@ -126,8 +134,7 @@ async function ensureClientRow(
 
 async function ensureMerchantRow(
   userId: string,
-  businessName: string,
-  businessType: string | null,
+  fields: { businessName: string; businessType: string | null },
 ): Promise<void> {
   const { data: existing } = await supabase
     .from('merchants')
@@ -138,7 +145,11 @@ async function ensureMerchantRow(
 
   const { data: merchant } = await supabase
     .from('merchants')
-    .insert({ user_id: userId, business_name: businessName, business_type: businessType })
+    .insert({
+      user_id: userId,
+      business_name: fields.businessName,
+      business_type: fields.businessType,
+    })
     .select('id')
     .single();
 
@@ -170,7 +181,10 @@ export async function signUpMerchant(input: MerchantSignUp): Promise<{ error?: s
   const userId = data.user?.id;
   if (userId) {
     await ensureProfile(userId, 'merchant');
-    await ensureMerchantRow(userId, input.businessName.trim(), input.businessType ?? null);
+    await ensureMerchantRow(userId, {
+      businessName: input.businessName.trim(),
+      businessType: input.businessType?.trim() || null,
+    });
   }
   return {};
 }
@@ -184,52 +198,38 @@ export async function signInMerchant(email: string, password: string): Promise<{
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Actions :Client (OTP par email : prénom + email + code à 6 chiffres)
+// Actions :Client (email + mot de passe, ou connexion sociale)
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// PRÉ-REQUIS Supabase : l'envoi d'email doit être configuré (SMTP custom OU
-// service intégré pour emails de test). Sinon /auth/v1/otp renvoie 500
-// (unexpected_failure). L'UI affiche alors un message clair.
-//
-// Le même flux sert à l'inscription ET à la connexion : signInWithOtp crée le
-// compte s'il n'existe pas (shouldCreateUser), sinon connecte l'existant.
+// PRÉ-REQUIS Supabase : Authentication > Providers > Email activé, et
+// « Confirm email » DÉSACTIVÉ (sinon signUp ne renvoie pas de session).
+// Longueur minimale du mot de passe imposée côté UI (8 caractères).
 
-/** Envoie un code OTP à 6 chiffres par email. */
-export async function startEmailOtp(email: string): Promise<{ error?: string }> {
-  const { error } = await supabase.auth.signInWithOtp({
-    email: email.trim(),
-    options: { shouldCreateUser: true, data: { role: 'client' } },
-  });
-  return error ? { error: error.message } : {};
+/** Longueur minimale du mot de passe (client et commerçant). */
+export const PASSWORD_MIN = 8;
+
+/** Provisionne le profil + la ligne client si absents (idempotent). */
+export async function provisionClientAccount(userId: string): Promise<void> {
+  await ensureProfile(userId, 'client');
+  await ensureClientRow(userId, '', null);
 }
 
-/**
- * Vérifie le code OTP et provisionne le profil client.
- * `firstName` est fourni à l'inscription, vide à la reconnexion d'un compte
- * existant (on n'écrase alors pas le prénom déjà enregistré).
- */
-export async function verifyEmailOtp(
-  email: string,
-  token: string,
-  firstName = '',
-): Promise<{ error?: string }> {
-  const { data, error } = await supabase.auth.verifyOtp({
+/** Inscription client par email + mot de passe. */
+export async function signUpClient(email: string, password: string): Promise<{ error?: string }> {
+  const { data, error } = await supabase.auth.signUp({
     email: email.trim(),
-    token: token.trim(),
-    type: 'email',
+    password,
+    options: { data: { role: 'client' } },
   });
   if (error) return { error: error.message };
-
-  const userId = data.user?.id;
-  if (userId) {
-    const name = firstName.trim();
-    if (name) {
-      await supabase.auth.updateUser({ data: { role: 'client', first_name: name } });
-    }
-    await ensureProfile(userId, 'client');
-    await ensureClientRow(userId, name, null);
-  }
+  if (data.user?.id) await provisionClientAccount(data.user.id);
   return {};
+}
+
+/** Connexion client par email + mot de passe. */
+export async function signInClient(email: string, password: string): Promise<{ error?: string }> {
+  const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+  return error ? { error: error.message } : {};
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

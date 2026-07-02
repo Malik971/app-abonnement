@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
-import { signInMerchant, signUpMerchant } from '@/hooks/useAuth';
+import { PASSWORD_MIN, signInMerchant, signUpMerchant } from '@/hooks/useAuth';
 import { ROUTES } from '@/lib/routes';
 import { supabase } from '@/lib/supabase';
 
@@ -90,11 +90,18 @@ function MerchantSignup() {
   const [businessType, setBusinessType] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
+  const mismatch = confirm.length > 0 && password !== confirm;
+
   async function submit() {
+    if (password !== confirm) {
+      setError('Les mots de passe ne correspondent pas.');
+      return;
+    }
     setLoading(true);
     setError(null);
     const { error } = await signUpMerchant({
@@ -135,13 +142,15 @@ function MerchantSignup() {
         value={email}
         onChangeText={setEmail}
       />
-      <Input label="Mot de passe" placeholder="Au moins 6 caractères" secureTextEntry value={password} onChangeText={setPassword} />
+      <Input label="Mot de passe" placeholder={`Au moins ${PASSWORD_MIN} caractères`} secureTextEntry value={password} onChangeText={setPassword} />
+      <Input label="Confirmer le mot de passe" placeholder="••••••••" secureTextEntry value={confirm} onChangeText={setConfirm} />
+      {mismatch ? <Text style={styles.error}>Les mots de passe ne correspondent pas.</Text> : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <Button
         label="Créer mon commerce"
         onPress={submit}
         loading={loading}
-        disabled={!businessName || !email || password.length < 6}
+        disabled={!businessName || !email || password.length < PASSWORD_MIN || password !== confirm}
       />
     </View>
   );
@@ -170,6 +179,7 @@ const styles = StyleSheet.create({
   },
   toggleItemActive: { backgroundColor: theme.colors.surface, color: theme.colors.text },
   error: { color: theme.colors.danger, marginBottom: theme.spacing.md, fontSize: theme.fontSize.sm },
+  notice: { color: theme.colors.textSecondary, fontSize: theme.fontSize.sm, marginBottom: theme.spacing.sm },
   success: { color: theme.colors.success, fontSize: theme.fontSize.md, fontWeight: '600' },
   clientLink: { alignSelf: 'center', paddingVertical: theme.spacing.md, marginTop: theme.spacing.xl },
   clientText: {

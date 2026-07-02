@@ -20,6 +20,21 @@ interface MerchantQrCardProps {
 export function MerchantQrCard({ token, businessName }: MerchantQrCardProps) {
   const [open, setOpen] = useState(false);
 
+  // Sans token, on n'affiche pas un QR cassé : message d'attente clair.
+  if (!token) {
+    return (
+      <Card style={styles.card}>
+        <View style={styles.miniWrap}>
+          <Ionicons name="qr-code-outline" size={64} color={theme.colors.locked} />
+        </View>
+        <View style={styles.info}>
+          <Text style={styles.title}>Mon QR code</Text>
+          <Text style={styles.subtitle}>En cours de génération...</Text>
+        </View>
+      </Card>
+    );
+  }
+
   async function share() {
     await Share.share({
       message: `Scanne ce code chez ${businessName} pour cumuler tes passages ! Code : ${token}`,

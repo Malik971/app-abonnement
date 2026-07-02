@@ -1,5 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { ZoomIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -40,6 +42,22 @@ export default function CardDetailScreen() {
   const hasAvailableReward =
     !!realCard && realCard.rewards.some((r) => realCard.points >= r.points_required);
 
+  // Outil DEV : simule des scans sur une carte de démo (remplit progressivement).
+  const [devFill, setDevFill] = useState<number | null>(null);
+  const shownFilled = devFill ?? view?.stampsFilled ?? 0;
+
+  function simulateScan() {
+    if (!view) return;
+    const next = Math.min(view.stampsTotal, shownFilled + 1);
+    setDevFill(next);
+    if (animationsEnabled) {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+      if (next >= view.stampsTotal && view.stampsTotal > 0) {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      }
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.topBar}>
@@ -65,7 +83,7 @@ export default function CardDetailScreen() {
             <LoyaltyCardView
               merchantName={view.merchantName}
               businessType={view.businessType}
-              stampsFilled={view.stampsFilled}
+              stampsFilled={shownFilled}
               stampsTotal={view.stampsTotal}
               rewardLabel={view.rewardLabel}
               totalVisits={view.totalVisits}
@@ -103,7 +121,7 @@ export default function CardDetailScreen() {
               <StampAnimation
                 total={view.stampsTotal}
                 initialFilled={0}
-                target={view.stampsFilled}
+                target={shownFilled}
                 stampSize={32}
                 perRow={Math.min(view.stampsTotal, 5)}
                 animate={animationsEnabled}
@@ -118,6 +136,9 @@ export default function CardDetailScreen() {
           {/* Actions */}
           {isGuest || view.isDemo ? (
             <View style={styles.actions}>
+              {__DEV__ && view.isDemo ? (
+                <Button label="DEV : Simuler un scan" variant="secondary" onPress={simulateScan} />
+              ) : null}
               <Button
                 label="Créer mon compte pour enregistrer cette carte"
                 onPress={() => requireAuth('enregistrer cette carte')}

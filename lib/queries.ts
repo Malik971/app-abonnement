@@ -319,6 +319,22 @@ export async function fetchProgram(merchantId: string): Promise<LoyaltyProgram |
   return data ?? null;
 }
 
+/**
+ * Renvoie le programme du commerce, en le créant s'il n'existe pas encore
+ * (auto-réparation : sans programme, le QR code du dashboard serait vide).
+ * Le token QR est généré par défaut côté base (gen_random_uuid()).
+ */
+export async function ensureProgram(merchantId: string): Promise<LoyaltyProgram | null> {
+  const existing = await fetchProgram(merchantId);
+  if (existing) return existing;
+  const { data } = await supabase
+    .from('loyalty_programs')
+    .insert({ merchant_id: merchantId })
+    .select('*')
+    .single();
+  return data ?? null;
+}
+
 export async function fetchMerchantClients(merchantId: string): Promise<MerchantClientRow[]> {
   const { data, error } = await supabase
     .from('loyalty_cards')

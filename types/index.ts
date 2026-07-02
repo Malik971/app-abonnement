@@ -58,6 +58,9 @@ export type Merchant = {
   goal_clients: number;
   goal_daily_scans: number;
   website: string | null;
+  /** Informations légales (migration 011). */
+  siren: string | null;
+  director_name: string | null;
   created_at: string;
 }
 
@@ -287,6 +290,14 @@ export interface Database {
       join_loyalty_program: {
         Args: { p_merchant_id: string };
         Returns: unknown;
+      };
+      seed_test_data: {
+        Args: { p_merchant_id: string };
+        Returns: undefined;
+      };
+      clear_test_data: {
+        Args: { p_merchant_id: string };
+        Returns: undefined;
       };
     };
     Enums: Record<string, never>;
